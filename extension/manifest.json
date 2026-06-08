@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Detector de Discurso de Odio (ES)",
+  "version": "0.9.0",
+  "version_name": "0.9.0-beta",
+  "description": "Beta funcional. Detecta y censura palabras tóxicas en español con un lexicón personalizable. Integración futura con BETO ajustado vía API local.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["http://127.0.0.1:8000/*"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Detector de Discurso de Odio",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options/options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lexicon.js", "api.js", "content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

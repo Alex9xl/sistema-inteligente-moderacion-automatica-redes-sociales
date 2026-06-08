@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo de prueba · Detector ES</title>
+    <style>
+      :root {
+        --bg: #fafaf9;
+        --text: #18181b;
+        --muted: #71717a;
+        --card: #fff;
+        --border: #e5e7eb;
+        --accent: #7c3aed;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        padding: 40px 20px;
+      }
+      .container { max-width: 760px; margin: 0 auto; }
+      h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #7c3aed, #a78bfa);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .lead { color: var(--muted); margin-bottom: 32px; }
+      article, p, .comment, .tweet {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 22px;
+        margin: 14px 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04);
+      }
+      h2 {
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--accent);
+        margin: 28px 0 6px;
+      }
+      .meta { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+      footer { margin-top: 40px; color: var(--muted); font-size: 13px; text-align: center; }
+      kbd {
+        background: #f4f4f5;
+        border: 1px solid var(--border);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Página de prueba · Detector ES</h1>
+      <p class="lead">
+        Esta página contiene textos de muestra para verificar que la extensión
+        detecta y censura correctamente. Activa la detección en el popup y
+        recarga si hace falta. Cambia el <strong>modo de censura</strong>
+        (resaltar / difuminar / asteriscos / ocultar) para ver el efecto.
+      </p>
+
+      <h2>Comentarios neutros</h2>
+      <p class="comment">
+        <span class="meta">@maria</span><br />
+        Me gustó mucho la película de ayer, sobre todo la fotografía. Volvería
+        a verla con la familia.
+      </p>
+      <p class="comment">
+        <span class="meta">@juan</span><br />
+        ¿Alguien sabe a qué hora abre la biblioteca el sábado? Necesito devolver
+        unos libros.
+      </p>
+
+      <h2>Comentarios con contenido tóxico</h2>
+      <p class="comment">
+        <span class="meta">@anon1</span><br />
+        Eres un idiota, no entiendes nada de lo que se debate aquí. Pendejo.
+      </p>
+      <p class="comment">
+        <span class="meta">@anon2</span><br />
+        Cállate, hijo de puta. Ojalá te mueras y te dejen en paz al resto.
+      </p>
+      <p class="comment">
+        <span class="meta">@anon3</span><br />
+        Sudaca de mierda, vuélvete a tu país, no te queremos aquí.
+      </p>
+
+      <h2>Modismos LATAM</h2>
+      <article>
+        <span class="meta">Foro chileno</span><br />
+        Ese flaite culiao no se calla nunca, weón. Conchatumadre.
+      </article>
+      <article>
+        <span class="meta">Foro mexicano</span><br />
+        Pinche pendejo, no mames. Vete a la verga con tus mentiras.
+      </article>
+      <article>
+        <span class="meta">Foro colombiano</span><br />
+        Marica hijueputa, gonorrea, deja de joder.
+      </article>
+      <article>
+        <span class="meta">Foro argentino</span><br />
+        Boludo de mierda, andá a llorar a otra parte. Pelotudo.
+      </article>
+
+      <h2>Discurso político / discriminatorio</h2>
+      <div class="tweet">
+        <span class="meta">@user42</span><br />
+        Los menas son todos delincuentes. Que se larguen de aquí.
+      </div>
+      <div class="tweet">
+        <span class="meta">@user99</span><br />
+        Esa feminazi se cree muy lista, pero no sabe nada de la vida real.
+      </div>
+
+      <h2>Texto largo mezclado (artículo)</h2>
+      <article>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. En esto
+        intervino el comentarista, llamándolo idiota delante de todos.
+        El moderador tuvo que sacar al usuario por reiterados insultos como
+        "imbecil", "cabrón" y otras lindezas. La discusión derivó luego en una
+        conversación más constructiva sobre la libertad de expresión y sus
+        límites en redes sociales.
+      </article>
+
+      <footer>
+        ¿No ves cambios? Pulsa <kbd>F5</kbd> con la detección activa, o usa
+        <strong>Re-escanear</strong> en el popup.
+      </footer>
+    </div>
+  </body>
+</html>

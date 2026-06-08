@@ -1,0 +1,57 @@
+/* ============================================================
+ * Estilos inyectados en la página por el content script.
+ * Solo afectan a las marcas de texto detectadas (.hate-detect-mark).
+ * ============================================================ */
+
+.hate-detect-mark {
+  border-radius: 3px;
+  padding: 0 2px;
+  cursor: help;
+  transition: filter 120ms ease, background-color 120ms ease;
+}
+
+.hate-detect-mark.hate-detect-mode-highlight {
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.4));
+  color: inherit;
+  box-shadow: inset 0 -2px 0 rgba(239, 68, 68, 0.85);
+  font-weight: 600;
+}
+
+.hate-detect-mark.hate-detect-mode-asterisk {
+  background-color: #1f2937;
+  color: #f9fafb;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 0 4px;
+  cursor: default;
+}
+
+.hate-detect-mark.hate-detect-mode-blur {
+  filter: blur(5px);
+  background-color: rgba(239, 68, 68, 0.18);
+  cursor: pointer;
+  user-select: none;
+}
+
+.hate-detect-mark.hate-detect-mode-blur.revealed {
+  filter: none;
+  background-color: rgba(239, 68, 68, 0.18);
+}
+
+.hate-detect-mark.hate-detect-mode-hide {
+  background-color: #6b7280;
+  color: #f9fafb;
+  font-style: italic;
+  font-size: 0.9em;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+
+.hate-detect-mark.hate-detect-mode-hide.revealed {
+  background-color: rgba(239, 68, 68, 0.25);
+  font-style: normal;
+}
+
+.hate-detect-mark:hover {
+  filter: brightness(1.05);
+}

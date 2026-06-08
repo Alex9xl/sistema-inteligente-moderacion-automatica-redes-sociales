@@ -1,0 +1,364 @@
+{
+  "HatEval": {
+    "nombre": "HatEval",
+    "vacio": false,
+    "shape": [
+      6599,
+      9
+    ],
+    "columnas": [
+      "id",
+      "text",
+      "target",
+      "language",
+      "HS",
+      "TR",
+      "AG",
+      "__index_level_0__",
+      "split"
+    ],
+    "dtypes": {
+      "id": "int64",
+      "text": "str",
+      "target": "str",
+      "language": "str",
+      "HS": "int64",
+      "TR": "int64",
+      "AG": "int64",
+      "__index_level_0__": "int64",
+      "split": "str"
+    },
+    "nulos_por_columna": {
+      "id": 0,
+      "text": 0,
+      "target": 0,
+      "language": 0,
+      "HS": 0,
+      "TR": 0,
+      "AG": 0,
+      "__index_level_0__": 0,
+      "split": 0
+    },
+    "duplicados_texto": 4,
+    "longitud": {
+      "n_textos": 6599,
+      "chars_media": 130.34838611910897,
+      "chars_mediana": 116.0,
+      "chars_p95": 278.0,
+      "chars_max": 846,
+      "chars_min": 6,
+      "tokens_media": 21.302166994999244,
+      "tokens_mediana": 19.0,
+      "tokens_p95": 46.0,
+      "tokens_max": 88
+    },
+    "seeds_latam_prop": 0.0244,
+    "distribucion_etiquetas": {
+      "HS": {
+        "0": 3860,
+        "1": 2739
+      },
+      "TR": {
+        "0": 4910,
+        "1": 1689
+      },
+      "AG": {
+        "0": 4447,
+        "1": 2152
+      }
+    },
+    "muestras": [
+      "Easyjet quiere duplicar el número de mujeres piloto' Verás tú para aparcar el avión.. http://t.co/46NuLkm09x",
+      "El gobierno debe crear un control estricto de inmigración en las zonas fronterizas con Colombia por q después del 20-8querrán venir en masa",
+      "Yo veo a mujeres destruidas por acoso laboral y callejero. Otras con depresión debido a violación sexual o maltrato físico. Y conocí a varias que se suicidaron por este tipo de comportamientos machist"
+    ]
+  },
+  "DETOXIS": {
+    "nombre": "DETOXIS",
+    "vacio": false,
+    "shape": [
+      3463,
+      21
+    ],
+    "columnas": [
+      "topic",
+      "thread_id",
+      "comment_id",
+      "reply_to",
+      "comment_level",
+      "comment",
+      "argumentation",
+      "constructiveness",
+      "positive_stance",
+      "negative_stance",
+      "target_person",
+      "target_group",
+      "stereotype",
+      "sarcasm",
+      "mockery",
+      "insult",
+      "improper_language",
+      "aggressiveness",
+      "intolerance",
+      "toxicity",
+      "toxicity_level"
+    ],
+    "dtypes": {
+      "topic": "str",
+      "thread_id": "str",
+      "comment_id": "str",
+      "reply_to": "str",
+      "comment_level": "int64",
+      "comment": "str",
+      "argumentation": "int64",
+      "constructiveness": "int64",
+      "positive_stance": "int64",
+      "negative_stance": "int64",
+      "target_person": "int64",
+      "target_group": "int64",
+      "stereotype": "int64",
+      "sarcasm": "int64",
+      "mockery": "int64",
+      "insult": "int64",
+      "improper_language": "int64",
+      "aggressiveness": "int64",
+      "intolerance": "int64",
+      "toxicity": "int64",
+      "toxicity_level": "int64"
+    },
+    "nulos_por_columna": {
+      "topic": 0,
+      "thread_id": 0,
+      "comment_id": 0,
+      "reply_to": 0,
+      "comment_level": 0,
+      "comment": 0,
+      "argumentation": 0,
+      "constructiveness": 0,
+      "positive_stance": 0,
+      "negative_stance": 0,
+      "target_person": 0,
+      "target_group": 0,
+      "stereotype": 0,
+      "sarcasm": 0,
+      "mockery": 0,
+      "insult": 0,
+      "improper_language": 0,
+      "aggressiveness": 0,
+      "intolerance": 0,
+      "toxicity": 0,
+      "toxicity_level": 0
+    },
+    "duplicados_texto": 18,
+    "longitud": {
+      "n_textos": 3463,
+      "chars_media": 206.66560785446146,
+      "chars_mediana": 127.0,
+      "chars_p95": 640.8999999999996,
+      "chars_max": 3270,
+      "chars_min": 1,
+      "tokens_media": 36.643372798151894,
+      "tokens_mediana": 23.0,
+      "tokens_p95": 111.89999999999964,
+      "tokens_max": 556
+    },
+    "seeds_latam_prop": 0.0006,
+    "distribucion_etiquetas": {
+      "toxicity": {
+        "0": 2316,
+        "1": 1147
+      },
+      "aggressiveness": {
+        "0": 3349,
+        "1": 114
+      },
+      "insult": {
+        "0": 3215,
+        "1": 248
+      },
+      "stereotype": {
+        "0": 3137,
+        "1": 326
+      },
+      "target_person": {
+        "0": 2965,
+        "1": 498
+      },
+      "target_group": {
+        "0": 2960,
+        "1": 503
+      }
+    },
+    "muestras": [
+      "Pensó: Zumo para restar.",
+      "Como les gusta el afeitado en seco a esta gente.",
+      "asi me gusta, que se maten entre ellos y en alta mar. Mas inmigrantes asi porfavor"
+    ]
+  },
+  "HaterNet": {
+    "nombre": "HaterNet",
+    "vacio": false,
+    "shape": [
+      6000,
+      3
+    ],
+    "columnas": [
+      "id",
+      "text",
+      "label"
+    ],
+    "dtypes": {
+      "id": "str",
+      "text": "str",
+      "label": "int64"
+    },
+    "nulos_por_columna": {
+      "id": 0,
+      "text": 0,
+      "label": 0
+    },
+    "duplicados_texto": 1,
+    "longitud": {
+      "n_textos": 6000,
+      "chars_media": 113.25883333333333,
+      "chars_mediana": 116.0,
+      "chars_p95": 180.0,
+      "chars_max": 342,
+      "chars_min": 23,
+      "tokens_media": 17.950833333333332,
+      "tokens_mediana": 18.0,
+      "tokens_p95": 30.0,
+      "tokens_max": 56
+    },
+    "seeds_latam_prop": 0.0105,
+    "distribucion_etiquetas": {
+      "label": {
+        "0": 4433,
+        "1": 1567
+      }
+    },
+    "muestras": [
+      "Ismael es egocentrico porque se vuelve loca si le dicen que tiene el pelo bonito😂😂😂😂 eso se define con otro objetivo #FirstDates251",
+      "..ya tardaba en salir quien pronunciase nombre catalán sílaba aguda como si fuese plana [es Eduááárd],[Ernééést],[Albééért] no son ingleses",
+      "(Esto no es un discurso político y razonado, obviamente, solo una llamada de atención en plan \"JODER, NO CUESTA TANTO SABER COSAS\")"
+    ]
+  },
+  "Chilean": {
+    "nombre": "Chilean",
+    "vacio": false,
+    "shape": [
+      20964,
+      21
+    ],
+    "columnas": [
+      "Unnamed: 0",
+      "caso",
+      "link",
+      "tweet a etiquetar",
+      "contexto",
+      "anónimo",
+      "género",
+      "mención migración",
+      "mención venezuela",
+      "mención política nacional",
+      "mención grupos marginalizados",
+      "mención otros",
+      "grosería c/int.",
+      "grosería s/int.",
+      "insulto/sobrenombre",
+      "hate speech/estereotipo",
+      "sarcasmo/ironía/burla",
+      "pregunta legítima",
+      "evidencia",
+      "figura femenina",
+      "figura masculina"
+    ],
+    "dtypes": {
+      "Unnamed: 0": "int64",
+      "caso": "float64",
+      "link": "str",
+      "tweet a etiquetar": "str",
+      "contexto": "str",
+      "anónimo": "float64",
+      "género": "float64",
+      "mención migración": "float64",
+      "mención venezuela": "float64",
+      "mención política nacional": "float64",
+      "mención grupos marginalizados": "float64",
+      "mención otros": "float64",
+      "grosería c/int.": "float64",
+      "grosería s/int.": "float64",
+      "insulto/sobrenombre": "float64",
+      "hate speech/estereotipo": "float64",
+      "sarcasmo/ironía/burla": "float64",
+      "pregunta legítima": "float64",
+      "evidencia": "float64",
+      "figura femenina": "float64",
+      "figura masculina": "float64"
+    },
+    "nulos_por_columna": {
+      "Unnamed: 0": 0,
+      "caso": 11130,
+      "link": 11130,
+      "tweet a etiquetar": 11130,
+      "contexto": 9834,
+      "anónimo": 11130,
+      "género": 11130,
+      "mención migración": 11130,
+      "mención venezuela": 11130,
+      "mención política nacional": 11130,
+      "mención grupos marginalizados": 11130,
+      "mención otros": 11130,
+      "grosería c/int.": 11130,
+      "grosería s/int.": 11130,
+      "insulto/sobrenombre": 11130,
+      "hate speech/estereotipo": 11130,
+      "sarcasmo/ironía/burla": 11130,
+      "pregunta legítima": 11130,
+      "evidencia": 11130,
+      "figura femenina": 11130,
+      "figura masculina": 11130
+    },
+    "duplicados_texto": 11463,
+    "longitud": {
+      "n_textos": 9834,
+      "chars_media": 149.2574740695546,
+      "chars_mediana": 131.0,
+      "chars_p95": 297.0,
+      "chars_max": 679,
+      "chars_min": 12,
+      "tokens_media": 23.706019930852147,
+      "tokens_mediana": 21.0,
+      "tokens_p95": 49.0,
+      "tokens_max": 77
+    },
+    "seeds_latam_prop": 0.0961,
+    "distribucion_etiquetas": {
+      "hate speech/estereotipo": {
+        "0": 9201,
+        "1": 633
+      },
+      "insulto/sobrenombre": {
+        "0": 5798,
+        "1": 4036
+      },
+      "grosería c/int.": {
+        "0": 7166,
+        "1": 2668
+      },
+      "sarcasmo/ironía/burla": {
+        "0": 7709,
+        "1": 2125
+      },
+      "mención migración": {
+        "0": 9429,
+        "1": 405
+      }
+    },
+    "muestras": [
+      "Eran tan pero tan feministas que invisibilizaban constantemente a las trabajadoras sexuales, haciéndole creer al mundo que eran incapaces de decidir y que cada vez que ejercían su derecho a hacerlo es",
+      "@Eneatipo7 @Cooperativa @karina_ol Me carga en lo q se convirtió la 2da vuelta a la gobernación...una flaiterío.",
+      ", ¿Sabrán las femiorcas como @karina_ol y todo el flaiterio mapuchento , que si hay una cultura y sociedad absolutamente hetero patriarcal, de un machismo extremo, es justamente la mapuche?"
+    ]
+  }
+}
