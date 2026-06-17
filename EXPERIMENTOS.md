@@ -22,13 +22,38 @@ Este archivo registra todas las decisiones metodológicas, hiperparámetros y co
 
 ## Decisiones previas al experimento
 
+### Corpus base: Spanish Hate Speech Superset (Tonneau et al., 2024)
+
+**Paper:** From Languages to Geographies: Towards Evaluating Cultural Bias in Hate Speech Datasets.
+WOAH 2024, ACL — https://aclanthology.org/2024.woah-1.23
+**Archivo:** `data/raw/spanish-hate-speech-superset/es_hf_102024.csv`
+**Filas:** 29,855 | **Datasets incluidos:** hateval, haternet, chileno, hascosva, homomex
+
+El superset ya aplica binarización y deduplicación. Las etiquetas de cada dataset
+interno están documentadas en el paper y en el código público:
+https://github.com/manueltonneau/hs_geographic_survey
+
 ### Unificación de etiquetas
 
-| Dataset | Etiqueta original | Etiqueta unificada | Notas |
-|---------|-------------------|--------------------|-------|
-| HatEval | HS=1 | 1 | Hate |
-| HatEval | HS=0 | 0 | No hate |
-| [Agregar otros] | | | |
+| Fuente | Etiqueta original | Etiqueta unificada | Responsable del mapeo |
+|--------|-------------------|--------------------|-----------------------|
+| Superset (hateval, haternet, chileno, hascosva, homomex) | `labels` (ya binaria: 0.0/1.0) | cast a `int` | Tonneau et al., 2024 |
+| DETOXIS 2021 | `toxicity_level >= 2` | 1 | Este proyecto |
+| DETOXIS 2021 | `toxicity_level < 2` | 0 | Este proyecto |
+
+**Justificación umbral DETOXIS:** nivel >= 2 corresponde a "toxicidad moderada a alta"
+según la guía de anotación de IberLEF 2021.
+
+### Decisión de corpus (registrada: Junio 2026)
+
+Se usa el Spanish Hate Speech Superset como base del corpus en lugar de unificar
+manualmente los 4 datasets individuales. Justificación:
+1. Respaldo académico (paper WOAH/ACL 2024, revisado por pares).
+2. Metodología de preprocesamiento documentada y reproducible.
+3. Incluye datasets adicionales (HaSCoSVa, HOMO-MEX) que aumentan la cobertura.
+4. Deduplicación y binarización ya aplicadas, reduciendo riesgo de errores manuales.
+DETOXIS se añade manualmente por no estar incluido en el superset y aportar
+diversidad de plataforma (comentarios de noticias vs. Twitter).
 
 ### Lexicón LATAM
 

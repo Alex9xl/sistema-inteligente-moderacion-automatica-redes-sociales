@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO DE IMPLEMENTACIÓN
+﻿# DOCUMENTO MAESTRO DE IMPLEMENTACIÓN
 
 ## Sistema Inteligente de Moderación Automática en Redes Sociales para la Protección del Bienestar Digital del Usuario
 
@@ -72,7 +72,7 @@ Diseñar, implementar y evaluar un sistema inteligente de moderación automátic
 
 ## 2.2 Objetivos específicos
 
-- **OE1.** Construir un corpus unificado de discurso de odio en español, integrando cuatro datasets públicos con un esquema de etiquetado binario consistente.
+- **OE1.** Construir un corpus unificado de discurso de odio en espanol, a partir del Spanish Hate Speech Superset (Tonneau et al., 2024) enriquecido con DETOXIS (IberLEF 2021), con esquema de etiquetado binario consistente.
 - **OE2.** Construir un lexicón documentado de modismos latinoamericanos que permita enriquecer el corpus mediante una variable observable (`tiene_modismo`).
 - **OE3.** Ajustar el modelo BETO sobre el corpus enriquecido bajo un protocolo de entrenamiento reproducible.
 - **OE4.** Entrenar y evaluar bajo un protocolo idéntico los modelos de referencia mBERT y XLM-R.
@@ -200,7 +200,7 @@ La frontera entre capas es estricta: la capa de datos no conoce al backend, el b
 
 ### 3.3.1 Módulo de Datos (`src/data/`)
 
-- Descarga y verifica datasets públicos.
+- Verifica las fuentes de datos (superset + DETOXIS) mediante scripts en data/raw/analisis_dataset/.
 - Aplica el pipeline de limpieza y normalización.
 - Genera el esquema canónico unificado y la columna `tiene_modismo`.
 - Produce las particiones `train/val/test` estratificadas y reproducibles.
@@ -413,10 +413,10 @@ Tesis_Proyecto/
 │
 ├── data/
 │   ├── raw/                          # datasets descargados, NO modificar
-│   │   ├── hateval/
-│   │   ├── mexa3t/
-│   │   └── detoxis/
-│   ├── interim/                      # versiones limpiadas individualmente
+│   │   ├── spanish-hate-speech-superset/  # corpus base (Tonneau et al., 2024)
+│   │   ├── DETOXIS_2021-main/             # complemento manual
+│   │   ├── analisis_dataset/              # scripts de verificacion (Paso 1.2)
+│   ├── interim/                      # DETOXIS limpio; superset no pasa por aqui
 │   ├── processed/                    # corpus unificado + particiones
 │   │   ├── corpus_v1.parquet
 │   │   ├── corpus_v1_enriquecido.parquet
@@ -592,7 +592,7 @@ lint:
 Se adopta la convención **medallion** (raw → interim → processed) propia de proyectos de datos reproducibles:
 
 - **`data/raw/`**: datasets tal como se descargaron. **Inmutable**. Cualquier modificación se considera un error de proceso.
-- **`data/interim/`**: cada dataset, limpio individualmente, con su esquema canónico, en formato Parquet. Reproducible mediante script.
+- **`data/interim/`**: DETOXIS limpio individualmente con su esquema canonico, en formato Parquet. El superset no pasa por interim (ya viene preprocesado). Reproducible mediante script.
 - **`data/processed/`**: corpus unificado y enriquecido + particiones `train/val/test`. Es el único insumo del entrenamiento.
 
 **Formato preferido**: Parquet (`pyarrow`), no CSV, por:
@@ -619,7 +619,7 @@ Ejemplo de `MANIFEST.json`:
     "sha256": "a3f1...",
     "git_commit": "9d2b1e7",
     "created_at": "2026-06-12T14:30:00Z",
-    "datasets_origen": ["hateval-2019", "mexa3t-2020", "detoxis-2021"],
+    "datasets_origen": ["spanish-hate-speech-superset-v2024", "detoxis-2021"],
     "lexicon_version": "modismos_latam_v1.csv",
     "n_total": 38421,
     "n_hate": 11250,
@@ -735,53 +735,103 @@ El discurso de odio en corpus reales suele tener entre **10 % y 35 %** de positi
 
 ## 7.1 Selección de datasets
 
-Se utilizan **cuatro** datasets públicos en español de calidad académica, seleccionados por cobertura temática, disponibilidad y dialectos representados:
+El corpus se construye a partir del **Spanish Hate Speech Superset** (Tonneau et al., 2024), un corpus unificado de calidad académica publicado en WOAH 2024 (ACL), enriquecido con **DETOXIS** (IberLEF 2021), que no está incluido en dicho superset.
 
-| Dataset | Origen | Tipo | Características |
-|---------|--------|------|-----------------|
-| **HatEval 2019** (SemEval-2019 Task 5) | Twitter ES/EN | Hate / no hate (mujeres, inmigrantes) | 6,600 tweets en español; estándar internacional; anotación multiclase. |
-| **DETOXIS** (IberLEF 2021) | Comentarios noticias ES | Toxicidad multinivel + 20 dimensiones | 5,249 comentarios; anotación granular; nivel de toxicidad ordinal. |
-| **HaterNet** | Twitter ES | Hate / no hate (binario) | 6,000 tweets; dataset clásico 2017; volumen adicional. |
-| **Chilean Dataset** | Twitter CL | Hate / estereotipo + 17 dimensiones | 31,609 tweets; modismos chilenos auténticos; contexto sociopolítico. |
+### 7.1.1 Base: Spanish Hate Speech Superset
+
+| Atributo | Detalle |
+|----------|---------|
+| **Archivo** | `data/raw/spanish-hate-speech-superset/es_hf_102024.csv` |
+| **Tamaño** | 29,855 ejemplos |
+| **Paper** | "From Languages to Geographies: Towards Evaluating Cultural Bias in Hate Speech Datasets" (WOAH 2024, ACL) |
+| **DOI** | https://aclanthology.org/2024.woah-1.23 |
+| **Código fuente** | https://github.com/manueltonneau/hs_geographic_survey |
+| **Preprocesamiento original** | Duplicados eliminados; etiquetas binarizadas; usernames y URLs sustituidos por tokens fijos |
+
+**Datasets incluidos en el superset:**
+
+| Dataset | Origen | Tipo |
+|---------|--------|------|
+| **HatEval 2019** (SemEval-2019 Task 5) | Twitter ES/EN | Hate / no hate (mujeres, inmigrantes) |
+| **HaterNet** | Twitter ES | Hate / no hate binario |
+| **Chilean Dataset** | Twitter CL | Hate / estereotipo + 17 dimensiones |
+| **HaSCoSVa** (VarDial 2023) | Twitter ES | Variedades dialectales |
+| **HOMO-MEX** (WOAH 2023) | Twitter MX | LGBT+phobia |
+
+**Columnas del superset:**
+
+| Columna | Tipo | Descripción |
+|---------|------|-------------|
+| `text` | string | Texto del post (usernames → `@USER`, links → `URL`) |
+| `labels` | float | `1.0` = hate, `0.0` = no hate (binario) |
+| `source` | string | Plataforma de origen (Twitter) |
+| `dataset` | string | Dataset de origen (`hateval`, `haternet`, `chileno`, etc.) |
+| `nb_annotators` | int | Número de anotadores |
+| `tweet_id` | string | ID original del tweet (cuando disponible) |
+| `post_author_country_location` | string | País del autor inferido (Nov 2024) |
+
+### 7.1.2 Complemento: DETOXIS (IberLEF 2021)
+
+| Atributo | Detalle |
+|----------|---------|
+| **Archivo** | `data/raw/DETOXIS_2021-main/data/DATASET_DETOXIS.csv` |
+| **Tamaño** | 3,463 ejemplos |
+| **Origen** | Comentarios de noticias en español |
+| **Motivo de inclusión manual** | No incluido en el superset; aporta diversidad de plataforma (fuera de Twitter) y anotación granular con 20 dimensiones |
 
 **Justificación de la combinación**: Esta selección equilibra:
 - **Dialecto español (España):** HatEval, DETOXIS, HaterNet
-- **Dialecto latinoamericano (Chile):** Chilean Dataset
-- **Plataformas:** Twitter (HatEval, HaterNet, Chilean) + Comentarios de noticias (DETOXIS)
-- **Anotación granular:** DETOXIS (20 dims) + Chilean (17 dims) para análisis fino de modismos
-- **Volumen:** ~49,000 ejemplos en total antes de limpieza
-
-**Descargas reales:**
-- **HatEval 2019:** https://huggingface.co/datasets/valeriobasile/HatEval
-- **DETOXIS:** https://github.com/alvaro-mazcu-herreros/DETOXIS_2021
-- **HaterNet:** https://zenodo.org/records/2592149
-- **Chilean Dataset:** https://github.com/aymeam/Datasets-for-Hate-Speech-Detection/tree/master/Chilean%20dataset
+- **Dialecto latinoamericano (Chile, México):** Chilean Dataset, HOMO-MEX
+- **Plataformas:** Twitter (superset) + Comentarios de noticias (DETOXIS)
+- **Volumen:** ~33,318 ejemplos en total tras la integración
 
 ## 7.2 Pipeline completo (visión general)
 
 ```
-[datasets crudos] → cargar → validar esquema → limpiar → normalizar →
-   → mapear etiquetas a binario → concatenar → deduplicar →
-   → enriquecer (tiene_modismo) → validar QC → particionar →
-   → guardar y registrar versión
+[superset ya preprocesado] ──────────────────────────────┐
+                                                         ▼
+[DETOXIS crudo] → normalizar() → mapear etiquetas →  concatenar →
+                                                         ▼
+                                              adaptar columnas →
+                                              enriquecer (tiene_modismo) →
+                                              validar QC → particionar →
+                                              guardar y registrar versión
 ```
+
+**Diferencia clave respecto al flujo manual:** el superset ya viene con limpieza y binarización aplicadas. Solo se necesita normalizar DETOXIS y homogeneizar el esquema de columnas antes de concatenar.
 
 ## 7.3 Pseudocódigo del pipeline
 
 ```python
-def construir_corpus(version: int) -> Path:
-    dfs = []
-    for nombre, loader in DATASETS.items():
-        df_raw = loader.cargar()
-        validar_esquema(df_raw, nombre)
-        df = limpiar(df_raw, nombre)
-        df = normalizar(df)
-        df = mapear_etiquetas(df, nombre)
-        df = a_esquema_canonico(df, nombre)
-        dfs.append(df)
+import pandas as pd
 
-    corpus = pd.concat(dfs, ignore_index=True)
-    corpus = deduplicar(corpus)
+def construir_corpus(version: int) -> Path:
+    # 1. Cargar superset (ya limpio y binarizado)
+    df_sup = pd.read_csv("data/raw/spanish-hate-speech-superset/es_hf_102024.csv")
+
+    # 2. Adaptar columnas al esquema canónico
+    df_sup = df_sup.rename(columns={"text": "texto", "labels": "etiqueta"})
+    df_sup["etiqueta"] = df_sup["etiqueta"].astype(int)
+    df_sup["id"] = df_sup["dataset"] + "_" + df_sup.index.astype(str)
+    df_sup["pais"] = df_sup["post_author_country_location"]
+
+    # 3. Cargar y normalizar DETOXIS
+    df_det = pd.read_csv("data/raw/DETOXIS_2021-main/data/DATASET_DETOXIS.csv")
+    df_det["texto"] = df_det["text"].apply(normalizar)   # src/data/clean.py
+    df_det["etiqueta"] = (df_det["toxicity_level"] >= 2).astype(int)
+    df_det["dataset"] = "detoxis"
+    df_det["source"] = "News Comments"
+    df_det["nb_annotators"] = 1
+    df_det["tweet_id"] = None
+    df_det["pais"] = "unknown"
+    df_det["id"] = "detoxis_" + df_det.index.astype(str)
+
+    # 4. Columnas finales
+    cols = ["id", "texto", "etiqueta", "dataset", "source",
+            "nb_annotators", "tweet_id", "pais"]
+    corpus = pd.concat([df_sup[cols], df_det[cols]], ignore_index=True)
+
+    # 5. Enriquecer y particionar
     corpus = enriquecer_con_lexicon(corpus, LEXICON_PATH)
     validar_corpus(corpus)
 
@@ -822,22 +872,15 @@ def normalizar(texto: str) -> str:
 
 ## 7.5 Mapeo de etiquetas
 
-Cada dataset trae su propio esquema. La normalización a binario debe **documentarse**:
+El superset ya entrega etiquetas binarizadas (labels: 0.0 / 1.0). Solo DETOXIS requiere mapeo manual:
 
-| Dataset | Etiqueta original | Etiqueta unificada |
-|---------|-------------------|--------------------|
-| HatEval | `HS = 1` | 1 |
-| HatEval | `HS = 0` | 0 |
-| MEX-A3T | `aggressive` | 1 |
-| MEX-A3T | `non-aggressive` | 0 |
-| DETOXIS | `toxicity_level ≥ 2` | 1 |
-| DETOXIS | `toxicity_level < 2` | 0 |
-| HaterNet | `1` (odio) | 1 |
-| HaterNet | `0` | 0 |
-| OffendES | `OFP, OFG` | 1 |
-| OffendES | `NOE, NO` | 0 |
+| Dataset | Etiqueta original | Etiqueta unificada | Responsable del mapeo |
+|---------|-------------------|--------------------|-----------------------|
+| Superset (hateval, haternet, chileno, hascosva, homomex) | labels (ya binaria) | cast a int | Tonneau et al., 2024 |
+| DETOXIS | `toxicity_level >= 2` | 1 | Este proyecto |
+| DETOXIS | `toxicity_level < 2` | 0 | Este proyecto |
 
-Estas equivalencias deben quedar reflejadas en `notebooks/02_unificacion.ipynb` y en `docs/decisiones.md`. **Una pregunta inevitable del jurado es: “¿cómo unificó las etiquetas?”**.
+**Nota para la defensa:** El superset ya documenta sus mapeos en el paper de Tonneau et al. (2024) y en su codigo publico. Para DETOXIS el umbral `>= 2` se justifica como toxicidad moderada a alta segun la guia de anotacion de IberLEF 2021. Estas equivalencias deben quedar reflejadas en `notebooks/02_unificacion.ipynb` y en `docs/decisiones.md`. **Una pregunta inevitable del jurado es: como unifico las etiquetas?**.
 
 ## 7.6 Estrategia de enriquecimiento
 

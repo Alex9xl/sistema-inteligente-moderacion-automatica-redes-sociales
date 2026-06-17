@@ -1,4 +1,4 @@
-# Estructura del Proyecto Creada
+﻿# Estructura del Proyecto Creada
 
 ## Resumen
 
@@ -189,8 +189,8 @@ pip install -r requirements.txt
 
 ### 2. Descarga de datasets
 
-Seguir las instrucciones en `desarrollo.md` Paso 1.1:
-- Descargar HatEval, MEX-A3T, DETOXIS a `data/raw/`
+Seguir las instrucciones en desarrollo.md Paso 1.1:
+- Verificar fuentes: superset en data/raw/spanish-hate-speech-superset/ y DETOXIS en data/raw/DETOXIS_2021-main/
 
 ### 3. Crear corpus
 
@@ -272,4 +272,4 @@ find . -type d | head -30 # Ver estructura
 
 ---
 
-**Toda la estructura está lista para comenzar el Paso 1.1 de `desarrollo.md`.**
+Toda la estructura esta lista para comenzar el Paso 1.1 de desarrollo.md (verificacion de fuentes de datos).

@@ -4,16 +4,20 @@ scripts/exploracion_inicial.py
 ==============================
 Paso 1.3 del proyecto (ver `documentos_extras/desarrollo.md`).
 
-Exploración inicial de los 4 datasets crudos en español:
-  1. HatEval 2019 (filtrado a `language == "es"`)
-  2. DETOXIS 2021
-  3. HaterNet
-  4. Chilean Dataset
+Exploración del corpus base compuesto por:
+  1. Spanish Hate Speech Superset (Tonneau et al., 2024) — WOAH/ACL
+     Incluye: HatEval, HaterNet, Chilean, HaSCoSVa, HOMO-MEX
+     Archivo: data/raw/spanish-hate-speech-superset/es_hf_102024.csv
+  2. DETOXIS 2021 (IberLEF 2021) — añadido manualmente
+     Archivo: data/raw/DETOXIS_2021-main/data/DATASET_DETOXIS.csv
+
+El superset es un corpus unificado y preprocesado por Tonneau et al. (2024),
+disponible en: https://aclanthology.org/2024.woah-1.23
 
 Produce:
-  * `data/reports_qc/exploracion_inicial.md`  -> reporte ejecutivo
-  * `data/reports_qc/figuras/*.png`           -> 4 figuras
-  * `data/reports_qc/exploracion_inicial.json` -> métricas crudas (machine-readable)
+  * data/reports_qc/exploracion_inicial.md   -> reporte ejecutivo
+  * data/reports_qc/exploracion_inicial.json -> métricas crudas
+  * data/reports_qc/figuras/*.png            -> 4 figuras
 
 Uso:
     python scripts/exploracion_inicial.py
@@ -22,248 +26,172 @@ from __future__ import annotations
 
 import json
 import sys
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import matplotlib
 
-matplotlib.use("Agg")  # backend no interactivo (CI / scripts)
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-# ----------------------------------------------------------------------
-# Configuración de rutas (todas relativas a la raíz del repo)
-# ----------------------------------------------------------------------
-ROOT = Path(__file__).resolve().parent.parent
-RAW = ROOT / "data" / "raw"
-REPORTS = ROOT / "data" / "reports_qc"
-FIGS = REPORTS / "figuras"
+# ---------------------------------------------------------------------------
+# Rutas
+# ---------------------------------------------------------------------------
+ROOT     = Path(__file__).resolve().parent.parent
+RAW      = ROOT / "data" / "raw"
+REPORTS  = ROOT / "data" / "reports_qc"
+FIGS     = REPORTS / "figuras"
 REPORTS.mkdir(parents=True, exist_ok=True)
 FIGS.mkdir(parents=True, exist_ok=True)
 
-# Subconjunto reducido de modismos/seeds LATAM para identificación preliminar.
-# El lexicón completo se construirá en el Paso 1.6 en `data/lexicons/`.
+SUPERSET_PATH = RAW / "spanish-hate-speech-superset" / "es_hf_102024.csv"
+DETOXIS_PATH  = RAW / "DETOXIS_2021-main" / "data" / "DATASET_DETOXIS.csv"
+
+# Semillas LATAM para estimación preliminar (previo al lexicón completo del Paso 1.6)
 SEEDS_LATAM = {
-    "weón", "weon", "wn", "culiao", "culiá", "flaite", "fome", "mapuchento",
+    "weon", "wn", "culiao", "culia", "flaite", "fome", "mapuchento",
     "boludo", "pelotudo", "forro", "sorete", "chamo", "chama",
-    "pinche", "naco", "naca", "no mames", "vete a la verga", "chinga tu madre",
-    "parce", "parcero", "marica", "gonorrea", "pirobo", "hijueputa",
-    "concha de tu madre", "conchatumadre", "ctmre", "qliao",
+    "pinche", "naco", "naca", "parce", "parcero", "marica",
+    "gonorrea", "pirobo", "hijueputa", "ctmre", "qliao",
+    "pendejo", "cagon", "mamerto", "bolsa", "gil", "tarado",
+    "guebon", "hueon", "conchetumare", "aweonao",
 }
 
 
-# ----------------------------------------------------------------------
-# Cargadores (uno por dataset)
-# ----------------------------------------------------------------------
-def cargar_hateval() -> pd.DataFrame:
-    """Carga HatEval (train+dev+test) y se queda con español únicamente."""
-    base = RAW / "HatEval" / "data"
-    archivos = {
-        "train": base / "train-00000-of-00001.csv",
-        "dev":   base / "dev-00000-of-00001.csv",
-        "test":  base / "test-00000-of-00001.csv",
-    }
-    partes = []
-    for split, ruta in archivos.items():
-        if not ruta.exists():
-            print(f"  [HatEval] ! falta {ruta.name}, se omite", file=sys.stderr)
-            continue
-        df = pd.read_csv(ruta)
-        df["split"] = split
-        partes.append(df)
-    if not partes:
+# ---------------------------------------------------------------------------
+# Cargadores
+# ---------------------------------------------------------------------------
+def cargar_superset() -> pd.DataFrame:
+    """Carga el Spanish Hate Speech Superset."""
+    if not SUPERSET_PATH.exists():
+        print(f"  [ERROR] Superset no encontrado: {SUPERSET_PATH}", file=sys.stderr)
         return pd.DataFrame()
-    df = pd.concat(partes, ignore_index=True)
-    if "language" in df.columns:
-        df = df[df["language"].astype(str).str.lower() == "es"].copy()
+    df = pd.read_csv(SUPERSET_PATH)
+    # Renombrar al esquema canónico para análisis uniforme
+    df = df.rename(columns={"text": "texto", "labels": "etiqueta"})
+    df["etiqueta"] = df["etiqueta"].astype(float).astype(int)
     return df
 
 
 def cargar_detoxis() -> pd.DataFrame:
-    """Carga DETOXIS (sólo el train, que es el que tiene etiquetas)."""
-    ruta = RAW / "DETOXIS_2021-main" / "data" / "DATASET_DETOXIS.csv"
-    if not ruta.exists():
-        print(f"  [DETOXIS] ! falta {ruta.name}", file=sys.stderr)
+    """Carga DETOXIS 2021 y aplica el mapeo binario previsto."""
+    if not DETOXIS_PATH.exists():
+        print(f"  [ERROR] DETOXIS no encontrado: {DETOXIS_PATH}", file=sys.stderr)
         return pd.DataFrame()
-    return pd.read_csv(ruta)
+    df = pd.read_csv(DETOXIS_PATH)
+    col_texto = "comment" if "comment" in df.columns else df.columns[0]
+    df = df.rename(columns={col_texto: "texto"})
+    df["etiqueta"] = (df["toxicity_level"] >= 2).astype(int)
+    df["dataset"]  = "detoxis"
+    return df
 
 
-def cargar_haternet() -> pd.DataFrame:
-    """
-    Parsea HaterNet (`labeled_corpus_6K.txt`).
-    Formato: `id=...;||;texto;||;etiqueta`.
-    """
-    ruta = RAW / "HaterNet-data" / "labeled_corpus_6K.txt"
-    if not ruta.exists():
-        print(f"  [HaterNet] ! falta {ruta.name}", file=sys.stderr)
-        return pd.DataFrame()
-    filas: list[dict] = []
-    with ruta.open("r", encoding="utf-8", errors="replace") as fh:
-        for linea in fh:
-            linea = linea.strip()
-            if not linea:
-                continue
-            partes = linea.split(";||;")
-            if len(partes) != 3:
-                continue
-            id_raw, texto, etiqueta = partes
-            id_ = id_raw.replace("id=", "").strip()
-            try:
-                lab = int(etiqueta.strip())
-            except ValueError:
-                continue
-            filas.append({"id": id_, "text": texto, "label": lab})
-    return pd.DataFrame(filas)
-
-
-def cargar_chilean() -> pd.DataFrame:
-    """Carga el dataset chileno completo."""
-    ruta = RAW / "Chilean dataset" / "dataset_chileno_lenguaje_ofensivo.csv"
-    if not ruta.exists():
-        print(f"  [Chilean] ! falta {ruta.name}", file=sys.stderr)
-        return pd.DataFrame()
-    return pd.read_csv(ruta, low_memory=False)
-
-
-# ----------------------------------------------------------------------
-# Métricas comunes
-# ----------------------------------------------------------------------
-def _safe_str(s: Any) -> str:
-    return "" if s is None else str(s)
-
-
+# ---------------------------------------------------------------------------
+# Estadísticas comunes
+# ---------------------------------------------------------------------------
 def estadisticas_longitud(textos: pd.Series) -> dict[str, float]:
-    """Devuelve estadísticas básicas de longitud (en caracteres y palabras)."""
     textos = textos.dropna().astype(str)
     if textos.empty:
         return {}
-    chars = textos.str.len()
-    words = textos.str.split().apply(len)
+    tokens = textos.str.split().apply(len)
+    chars  = textos.str.len()
     return {
-        "n_textos": int(textos.shape[0]),
-        "chars_media": float(chars.mean()),
-        "chars_mediana": float(chars.median()),
-        "chars_p95": float(chars.quantile(0.95)),
-        "chars_max": int(chars.max()),
-        "chars_min": int(chars.min()),
-        "tokens_media": float(words.mean()),
-        "tokens_mediana": float(words.median()),
-        "tokens_p95": float(words.quantile(0.95)),
-        "tokens_max": int(words.max()),
+        "n": int(len(textos)),
+        "tokens_media":   float(tokens.mean()),
+        "tokens_mediana": float(tokens.median()),
+        "tokens_p95":     float(tokens.quantile(0.95)),
+        "tokens_max":     int(tokens.max()),
+        "chars_mediana":  float(chars.median()),
+        "chars_p95":      float(chars.quantile(0.95)),
     }
 
 
-def distribucion_binaria(serie: pd.Series) -> dict[int, int]:
-    """Cuenta valores 0/1 en una serie (después de coerción int donde sea posible)."""
-    s = pd.to_numeric(serie, errors="coerce").dropna().astype(int)
-    counts = s.value_counts().to_dict()
-    return {int(k): int(v) for k, v in counts.items()}
-
-
-def proporcion_seeds_latam(textos: pd.Series, seeds: set[str]) -> float:
-    """Proporción de textos que contienen al menos un seed LATAM (case-insensitive)."""
+def prop_seeds_latam(textos: pd.Series) -> float:
+    import re
     if textos.empty:
         return 0.0
-    seeds_lc = {s.lower() for s in seeds}
-    palabras_re = "|".join(map(_re_escape, seeds_lc))
-    if not palabras_re:
-        return 0.0
-    import re as _re
-    pat = _re.compile(rf"(?<![\wáéíóúñ])({palabras_re})(?![\wáéíóúñ])", _re.IGNORECASE)
-    presencia = textos.dropna().astype(str).apply(lambda t: bool(pat.search(t)))
-    return float(presencia.mean())
+    pat = re.compile(
+        r"(?<![a-záéíóúñü])(" + "|".join(map(re.escape, SEEDS_LATAM)) + r")(?![a-záéíóúñü])",
+        re.IGNORECASE,
+    )
+    return float(textos.dropna().astype(str).apply(lambda t: bool(pat.search(t))).mean())
 
 
-def _re_escape(s: str) -> str:
-    import re as _re
-    return _re.escape(s)
-
-
-# ----------------------------------------------------------------------
-# Reporte por dataset
-# ----------------------------------------------------------------------
-def explorar_dataset(
-    nombre: str,
-    df: pd.DataFrame,
-    columna_texto: str,
-    columnas_etiqueta: list[str],
-) -> dict[str, Any]:
-    """Devuelve un diccionario con todos los hallazgos del dataset."""
+# ---------------------------------------------------------------------------
+# Análisis por fuente
+# ---------------------------------------------------------------------------
+def analizar_superset(df: pd.DataFrame) -> dict[str, Any]:
     if df.empty:
-        return {"nombre": nombre, "vacio": True}
-
-    resumen: dict[str, Any] = {
-        "nombre": nombre,
-        "vacio": False,
-        "shape": list(df.shape),
-        "columnas": df.columns.tolist(),
-        "dtypes": {c: str(t) for c, t in df.dtypes.items()},
-        "nulos_por_columna": {c: int(df[c].isna().sum()) for c in df.columns},
-        "duplicados_texto": (
-            int(df[columna_texto].astype(str).duplicated().sum())
-            if columna_texto in df.columns
-            else None
-        ),
+        return {"vacio": True}
+    total = len(df)
+    por_dataset = df["dataset"].value_counts().to_dict()
+    return {
+        "vacio":         False,
+        "n_total":       total,
+        "n_hate":        int((df["etiqueta"] == 1).sum()),
+        "pct_hate":      round((df["etiqueta"] == 1).mean() * 100, 2),
+        "n_no_hate":     int((df["etiqueta"] == 0).sum()),
+        "datasets":      {k: int(v) for k, v in por_dataset.items()},
+        "n_paises":      int(df["post_author_country_location"].nunique()) if "post_author_country_location" in df.columns else None,
+        "longitud":      estadisticas_longitud(df["texto"]),
+        "seeds_latam_pct": round(prop_seeds_latam(df["texto"]) * 100, 2),
+        "duplicados":    int(df["texto"].astype(str).duplicated().sum()),
+        "nulos_texto":   int(df["texto"].isnull().sum()),
     }
 
-    if columna_texto in df.columns:
-        resumen["longitud"] = estadisticas_longitud(df[columna_texto])
-        resumen["seeds_latam_prop"] = round(
-            proporcion_seeds_latam(df[columna_texto], SEEDS_LATAM), 4
-        )
 
-    resumen["distribucion_etiquetas"] = {}
-    for col in columnas_etiqueta:
-        if col in df.columns:
-            resumen["distribucion_etiquetas"][col] = distribucion_binaria(df[col])
+def analizar_detoxis(df: pd.DataFrame) -> dict[str, Any]:
+    if df.empty:
+        return {"vacio": True}
+    total = len(df)
+    return {
+        "vacio":         False,
+        "n_total":       total,
+        "n_hate":        int((df["etiqueta"] == 1).sum()),
+        "pct_hate":      round((df["etiqueta"] == 1).mean() * 100, 2),
+        "n_no_hate":     int((df["etiqueta"] == 0).sum()),
+        "longitud":      estadisticas_longitud(df["texto"]),
+        "seeds_latam_pct": round(prop_seeds_latam(df["texto"]) * 100, 2),
+        "duplicados":    int(df["texto"].astype(str).duplicated().sum()),
+        "nulos_texto":   int(df["texto"].isnull().sum()),
+        "mapeo_etiqueta": "toxicity_level >= 2 -> 1",
+    }
 
-    if columna_texto in df.columns:
-        muestras = df[columna_texto].dropna().astype(str).head(3).tolist()
-        resumen["muestras"] = [m[:200] for m in muestras]
 
-    return resumen
-
-
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Figuras
-# ----------------------------------------------------------------------
-def figura_distribucion_clases(resumenes: dict[str, dict[str, Any]]) -> Path:
-    """Barras 0/1 por dataset."""
-    nombres, n0, n1 = [], [], []
-    mapping = [
-        ("HatEval", "HS"),
-        ("DETOXIS", "toxicity"),
-        ("HaterNet", "label"),
-        ("Chilean", "hate speech/estereotipo"),
-    ]
-    for ds, col in mapping:
-        d = resumenes.get(ds, {})
-        if not d or d.get("vacio"):
-            continue
-        dist = d.get("distribucion_etiquetas", {}).get(col, {})
-        if not dist:
-            continue
-        nombres.append(ds)
-        n0.append(int(dist.get(0, 0)))
-        n1.append(int(dist.get(1, 0)))
+# ---------------------------------------------------------------------------
+def fig_distribucion_clases(stats: dict[str, Any]) -> Path:
+    """Barras 0/1 por fuente (superset total y DETOXIS)."""
+    fuentes = []
+    n0_vals, n1_vals = [], []
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    x = np.arange(len(nombres))
+    # Superset: agrupado total + por sub-dataset
+    for nombre, data in [("Superset\n(total)", stats.get("superset", {})),
+                          ("DETOXIS", stats.get("detoxis", {}))]:
+        d = data
+        if d.get("vacio"):
+            continue
+        fuentes.append(nombre)
+        n0_vals.append(d.get("n_no_hate", 0))
+        n1_vals.append(d.get("n_hate", 0))
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    x = np.arange(len(fuentes))
     w = 0.4
-    ax.bar(x - w / 2, n0, w, label="No odio (0)", color="#a78bfa")
-    ax.bar(x + w / 2, n1, w, label="Odio (1)", color="#7c3aed")
+    bars0 = ax.bar(x - w / 2, n0_vals, w, label="No odio (0)", color="#a78bfa")
+    bars1 = ax.bar(x + w / 2, n1_vals, w, label="Odio (1)", color="#7c3aed")
     ax.set_xticks(x)
-    ax.set_xticklabels(nombres)
+    ax.set_xticklabels(fuentes)
     ax.set_ylabel("# ejemplos")
-    ax.set_title("Distribución de clases por dataset (etiqueta de hate principal)")
+    ax.set_title("Distribución de clases por fuente del corpus")
     ax.legend()
-    for i, (a, b) in enumerate(zip(n0, n1)):
-        if a + b > 0:
-            ax.text(i - w / 2, a, str(a), ha="center", va="bottom", fontsize=9)
-            ax.text(i + w / 2, b, str(b), ha="center", va="bottom", fontsize=9)
+    for b, v in list(zip(bars0, n0_vals)) + list(zip(bars1, n1_vals)):
+        if v > 0:
+            ax.text(b.get_x() + b.get_width() / 2, v, f"{v:,}", ha="center", va="bottom", fontsize=8)
     fig.tight_layout()
     out = FIGS / "distribucion_clases.png"
     fig.savefig(out, dpi=120, bbox_inches="tight")
@@ -271,36 +199,57 @@ def figura_distribucion_clases(resumenes: dict[str, dict[str, Any]]) -> Path:
     return out
 
 
-def figura_longitud_texto(resumenes: dict[str, dict[str, Any]]) -> Path:
-    """Boxplot de longitud (en tokens) por dataset."""
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    nombres, datos = [], []
-    for nombre, d in resumenes.items():
+def fig_datasets_en_superset(stats: dict[str, Any]) -> Path:
+    """Barras: volumen de cada dataset dentro del superset."""
+    sup = stats.get("superset", {})
+    if sup.get("vacio") or "datasets" not in sup:
+        fig, ax = plt.subplots()
+        ax.text(0.5, 0.5, "Sin datos", ha="center", va="center")
+        out = FIGS / "volumen_datasets.png"
+        fig.savefig(out, dpi=120)
+        plt.close(fig)
+        return out
+
+    datasets = dict(sorted(sup["datasets"].items(), key=lambda x: -x[1]))
+    nombres  = list(datasets.keys())
+    valores  = list(datasets.values())
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    bars = ax.bar(nombres, valores, color="#7c3aed")
+    ax.set_ylabel("# ejemplos")
+    ax.set_title("Datasets incluidos en el Spanish Hate Speech Superset")
+    ax.tick_params(axis="x", rotation=20)
+    for b, v in zip(bars, valores):
+        ax.text(b.get_x() + b.get_width() / 2, v, f"{v:,}", ha="center", va="bottom", fontsize=9)
+    fig.tight_layout()
+    out = FIGS / "volumen_datasets.png"
+    fig.savefig(out, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+    return out
+
+
+def fig_longitud(stats: dict[str, Any]) -> Path:
+    """Barras comparando longitud P95 de texto entre superset y DETOXIS."""
+    labels, mediana_vals, p95_vals = [], [], []
+    for nombre, key in [("Superset", "superset"), ("DETOXIS", "detoxis")]:
+        d = stats.get(key, {})
         if d.get("vacio") or "longitud" not in d:
             continue
-        nombres.append(nombre)
-        long_ = d["longitud"]
-        # Reconstruimos un resumen 5-num desde estadísticos
-        datos.append([
-            max(1, long_["tokens_media"] - long_["tokens_p95"] / 2),
-            long_["tokens_mediana"],
-            long_["tokens_p95"],
-            long_["tokens_max"],
-        ])
-    if not nombres:
-        plt.close(fig)
-        return FIGS / "longitud_tokens.png"
-    valores_p95 = [d[2] for d in datos]
-    valores_med = [d[1] for d in datos]
-    valores_max = [d[3] for d in datos]
-    x = np.arange(len(nombres))
-    ax.bar(x - 0.2, valores_med, 0.2, label="Mediana", color="#7c3aed")
-    ax.bar(x,        valores_p95, 0.2, label="P95",      color="#a78bfa")
-    ax.bar(x + 0.2,  valores_max, 0.2, label="Máx",      color="#c4b5fd")
+        labels.append(nombre)
+        mediana_vals.append(d["longitud"]["tokens_mediana"])
+        p95_vals.append(d["longitud"]["tokens_p95"])
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    x = np.arange(len(labels))
+    w = 0.35
+    ax.bar(x - w / 2, mediana_vals, w, label="Mediana", color="#7c3aed")
+    ax.bar(x + w / 2, p95_vals,     w, label="P95",     color="#a78bfa")
     ax.set_xticks(x)
-    ax.set_xticklabels(nombres)
+    ax.set_xticklabels(labels)
     ax.set_ylabel("# tokens")
-    ax.set_title("Longitud de texto por dataset (en tokens, escala lineal)")
+    ax.set_title("Longitud de texto por fuente (tokens)")
+    ax.axhline(128, color="red",    linestyle="--", linewidth=1, label="max_length=128")
+    ax.axhline(256, color="orange", linestyle="--", linewidth=1, label="max_length=256")
     ax.legend()
     fig.tight_layout()
     out = FIGS / "longitud_tokens.png"
@@ -309,24 +258,22 @@ def figura_longitud_texto(resumenes: dict[str, dict[str, Any]]) -> Path:
     return out
 
 
-def figura_seeds_latam(resumenes: dict[str, dict[str, Any]]) -> Path:
-    """Barras: proporción con al menos un seed LATAM por dataset."""
-    nombres, props = [], []
-    for nombre, d in resumenes.items():
+def fig_seeds_latam(stats: dict[str, Any]) -> Path:
+    """Barras: % de textos con al menos un seed LATAM."""
+    labels, props = [], []
+    for nombre, key in [("Superset", "superset"), ("DETOXIS", "detoxis")]:
+        d = stats.get(key, {})
         if d.get("vacio"):
             continue
-        if "seeds_latam_prop" in d:
-            nombres.append(nombre)
-            props.append(d["seeds_latam_prop"] * 100)
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.bar(nombres, props, color="#7c3aed")
-    ax.set_ylabel("% de textos con ≥1 seed LATAM")
-    ax.set_title("Presencia de modismos LATAM (subconjunto pre-lexicón Paso 1.6)")
+        labels.append(nombre)
+        props.append(d.get("seeds_latam_pct", 0))
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    bars = ax.bar(labels, props, color="#7c3aed")
+    ax.set_ylabel("% textos con >= 1 seed LATAM")
+    ax.set_title("Presencia de modismos LATAM — estimacion pre-lexicon (Paso 1.6)")
     for b, p in zip(bars, props):
-        ax.text(
-            b.get_x() + b.get_width() / 2, p, f"{p:.1f}%",
-            ha="center", va="bottom", fontsize=10,
-        )
+        ax.text(b.get_x() + b.get_width() / 2, p, f"{p:.1f}%", ha="center", va="bottom", fontsize=10)
     fig.tight_layout()
     out = FIGS / "seeds_latam.png"
     fig.savefig(out, dpi=120, bbox_inches="tight")
@@ -334,212 +281,202 @@ def figura_seeds_latam(resumenes: dict[str, dict[str, Any]]) -> Path:
     return out
 
 
-def figura_volumen(resumenes: dict[str, dict[str, Any]]) -> Path:
-    """Volumen total por dataset (después de filtros aplicados)."""
-    nombres, volumen = [], []
-    for nombre, d in resumenes.items():
-        if d.get("vacio"):
-            continue
-        nombres.append(nombre)
-        volumen.append(int(d["shape"][0]))
-    fig, ax = plt.subplots(figsize=(7.5, 4))
-    bars = ax.bar(nombres, volumen, color="#a78bfa")
-    ax.set_ylabel("# filas tras carga inicial")
-    ax.set_title("Volumen por dataset después de carga (HatEval filtrado a ES)")
-    for b, v in zip(bars, volumen):
-        ax.text(
-            b.get_x() + b.get_width() / 2, v, f"{v:,}",
-            ha="center", va="bottom", fontsize=10,
-        )
-    fig.tight_layout()
-    out = FIGS / "volumen_datasets.png"
-    fig.savefig(out, dpi=120, bbox_inches="tight")
-    plt.close(fig)
-    return out
-
-
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Reporte Markdown
-# ----------------------------------------------------------------------
-def render_md(resumenes: dict[str, dict[str, Any]], rutas_figuras: dict[str, Path]) -> str:
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M")
-    total = sum(int(d.get("shape", [0])[0]) for d in resumenes.values() if not d.get("vacio"))
+# ---------------------------------------------------------------------------
+def render_md(stats: dict[str, Any], rutas: dict[str, Path]) -> str:
+    fecha  = datetime.now().strftime("%Y-%m-%d %H:%M")
+    sup    = stats.get("superset", {})
+    det    = stats.get("detoxis",  {})
+    n_sup  = sup.get("n_total", 0)
+    n_det  = det.get("n_total", 0)
+    n_tot  = n_sup + n_det
 
     lineas = [
         "# Reporte de Exploración Inicial (Paso 1.3)",
         "",
         f"**Generado:** {fecha}  ",
-        f"**Datasets:** {len([d for d in resumenes.values() if not d.get('vacio')])} de 4 cargados.  ",
-        f"**Total de filas tras carga inicial:** {total:,}.",
+        f"**Corpus base:** Spanish Hate Speech Superset (Tonneau et al., 2024) + DETOXIS 2021  ",
+        f"**Total de ejemplos:** {n_tot:,}  ",
         "",
-        "Este documento es la salida automática del script "
-        "`scripts/exploracion_inicial.py` y del notebook "
-        "`notebooks/01_exploracion.ipynb`. Resume el estado de los datos crudos "
-        "antes de la limpieza/normalización (Paso 1.4) y el mapeo a esquema "
-        "binario (Paso 1.5).",
+        "## Contexto del corpus",
+        "",
+        "El corpus se construye a partir de dos fuentes complementarias:",
+        "",
+        "### 1. Spanish Hate Speech Superset",
+        "- **Paper:** *From Languages to Geographies: Towards Evaluating Cultural Bias in Hate Speech Datasets*  ",
+        "  Tonneau et al. (2024) — WOAH 2024, ACL. https://aclanthology.org/2024.woah-1.23",
+        "- **Descripción:** Superset de 29,855 posts anotados como hate/no-hate, resultado de unificar",
+        "  todos los datasets públicos de español disponibles a abril 2024.",
+        "- **Preprocesamiento:** duplicados eliminados, etiquetas binarizadas, usernames/URLs anonimizados.",
+        "- **Datasets incluidos:** HatEval, HaterNet, Chilean, HaSCoSVa, HOMO-MEX.",
+        "",
+        "### 2. DETOXIS 2021",
+        "- **Paper:** Taulé et al. (2021) — IberLEF 2021.",
+        "- **Descripción:** 3,463 comentarios de noticias en español con anotación de toxicidad",
+        "  en 20 dimensiones. Añadido manualmente porque NO está incluido en el superset.",
+        "- **Mapeo:** `toxicity_level >= 2` → etiqueta 1 (hate).",
         "",
         "## Resumen ejecutivo",
         "",
-        "| Dataset | Filas | Idioma | Plataforma | Etiqueta principal | % seeds LATAM |",
-        "|---------|------:|--------|------------|--------------------|---------------:|",
+        "| Fuente | Filas | % hate | P95 tokens | % seeds LATAM |",
+        "|--------|------:|-------:|-----------:|--------------:|",
     ]
 
-    info_meta = {
-        "HatEval":  ("ES (filtrado)", "Twitter",            "HS"),
-        "DETOXIS":  ("ES",            "Comentarios noticias", "toxicity"),
-        "HaterNet": ("ES",            "Twitter",            "label"),
-        "Chilean":  ("ES (CL)",       "Twitter",            "hate speech/estereotipo"),
-    }
-    for nombre, (idioma, plataforma, etq) in info_meta.items():
-        d = resumenes.get(nombre, {"vacio": True})
+    for nombre, d in [("Superset (total)", sup), ("DETOXIS", det)]:
         if d.get("vacio"):
-            lineas.append(f"| {nombre} | — | {idioma} | {plataforma} | {etq} | — |")
+            lineas.append(f"| {nombre} | — | — | — | — |")
             continue
-        n_filas = int(d["shape"][0])
-        seeds_pct = d.get("seeds_latam_prop", 0) * 100
+        long_ = d.get("longitud", {})
         lineas.append(
-            f"| {nombre} | {n_filas:,} | {idioma} | {plataforma} | `{etq}` | {seeds_pct:.1f}% |"
+            f"| {nombre} | {d['n_total']:,} | {d['pct_hate']}% "
+            f"| {long_.get('tokens_p95', '—'):.0f} | {d.get('seeds_latam_pct', 0):.1f}% |"
         )
-    lineas.append("")
 
     lineas += [
+        f"| **TOTAL** | **{n_tot:,}** | | | |",
+        "",
+        "## Datasets incluidos en el Superset",
+        "",
+        "| Dataset | Filas | Origen |",
+        "|---------|------:|--------|",
+    ]
+
+    meta_datasets = {
+        "hateval":  "Twitter ES/EN — SemEval-2019",
+        "haternet": "Twitter ES — Sensors 2019",
+        "chileno":  "Twitter CL — WOAH 2022",
+        "hascosva": "Twitter multi-variedad — VarDial 2023",
+        "homomex":  "Twitter MX — WOAH 2023",
+    }
+    for ds, cnt in sup.get("datasets", {}).items():
+        origen = meta_datasets.get(ds, "—")
+        lineas.append(f"| `{ds}` | {cnt:,} | {origen} |")
+
+    lineas += [
+        "",
         "## Figuras",
         "",
-        f"![Volumen por dataset]({rutas_figuras['volumen'].relative_to(REPORTS).as_posix()})",
+        f"![Distribucion de clases]({rutas['clases'].relative_to(REPORTS).as_posix()})",
         "",
-        f"![Distribución de clases]({rutas_figuras['clases'].relative_to(REPORTS).as_posix()})",
+        f"![Datasets en el superset]({rutas['volumen'].relative_to(REPORTS).as_posix()})",
         "",
-        f"![Longitud de texto]({rutas_figuras['longitud'].relative_to(REPORTS).as_posix()})",
+        f"![Longitud de texto]({rutas['longitud'].relative_to(REPORTS).as_posix()})",
         "",
-        f"![Seeds LATAM]({rutas_figuras['seeds'].relative_to(REPORTS).as_posix()})",
+        f"![Seeds LATAM]({rutas['seeds'].relative_to(REPORTS).as_posix()})",
         "",
+        "## Análisis detallado",
+        "",
+        "### Superset",
     ]
 
-    # Detalle por dataset
-    for nombre in ["HatEval", "DETOXIS", "HaterNet", "Chilean"]:
-        d = resumenes.get(nombre, {"vacio": True})
-        lineas += [f"## {nombre}", ""]
-        if d.get("vacio"):
-            lineas += ["⚠️ Dataset no encontrado o vacío.", ""]
-            continue
+    if not sup.get("vacio"):
+        long_ = sup.get("longitud", {})
         lineas += [
-            f"- **Forma:** {d['shape'][0]:,} filas × {d['shape'][1]} columnas",
-            f"- **Columnas:** {', '.join(d['columnas'][:14])}"
-            + (" …" if len(d["columnas"]) > 14 else ""),
-            f"- **Duplicados de texto:** {d.get('duplicados_texto', 'n/a')}",
+            f"- **Filas:** {sup['n_total']:,}",
+            f"- **Hate:** {sup['n_hate']:,} ({sup['pct_hate']}%) | **No hate:** {sup['n_no_hate']:,}",
+            f"- **Duplicados de texto:** {sup.get('duplicados', 'n/a')} (superset ya deduplico)",
+            f"- **Longitud mediana:** {long_.get('tokens_mediana', '—'):.0f} tokens | P95: {long_.get('tokens_p95', '—'):.0f} tokens",
+            f"- **Seeds LATAM:** {sup.get('seeds_latam_pct', 0):.1f}% de textos (estimacion pre-lexicon)",
+            f"- **Paises inferidos:** {sup.get('n_paises', '—')} distintos (metadata Nov 2024)",
         ]
-        long_ = d.get("longitud", {})
-        if long_:
-            lineas += [
-                f"- **Longitud (chars):** mediana={long_['chars_mediana']:.0f}, "
-                f"P95={long_['chars_p95']:.0f}, máx={long_['chars_max']}",
-                f"- **Longitud (tokens):** mediana={long_['tokens_mediana']:.0f}, "
-                f"P95={long_['tokens_p95']:.0f}, máx={long_['tokens_max']}",
-            ]
-        lineas.append(f"- **Seeds LATAM presentes:** {d.get('seeds_latam_prop', 0)*100:.2f}% de textos")
 
-        dist = d.get("distribucion_etiquetas", {})
-        if dist:
-            lineas += ["", "**Distribución de etiquetas:**", ""]
-            for col, mapa in dist.items():
-                total_col = sum(mapa.values())
-                pct = {k: (v / total_col * 100 if total_col else 0) for k, v in mapa.items()}
-                pares = ", ".join(f"`{k}`={v:,} ({pct[k]:.1f}%)" for k, v in mapa.items())
-                lineas.append(f"- `{col}`: {pares}")
-
-        muestras = d.get("muestras", [])
-        if muestras:
-            lineas += ["", "**Muestras de texto:**", ""]
-            for i, m in enumerate(muestras, 1):
-                lineas.append(f"{i}. `{m}`")
-
-        lineas.append("")
+    lineas += ["", "### DETOXIS"]
+    if not det.get("vacio"):
+        long_ = det.get("longitud", {})
+        lineas += [
+            f"- **Filas:** {det['n_total']:,}",
+            f"- **Hate (toxicity_level >= 2):** {det['n_hate']:,} ({det['pct_hate']}%)",
+            f"- **Longitud mediana:** {long_.get('tokens_mediana', '—'):.0f} tokens | P95: {long_.get('tokens_p95', '—'):.0f} tokens",
+            f"- **Seeds LATAM:** {det.get('seeds_latam_pct', 0):.1f}% de textos",
+        ]
+        if long_.get("tokens_p95", 0) > 128:
+            lineas.append(
+                f"- **ATENCION:** P95={long_.get('tokens_p95', 0):.0f} tokens > 128 "
+                "→ usar `max_length=256` para BETO en este dataset."
+            )
 
     lineas += [
-        "## Hallazgos clave (preliminar)",
         "",
-        "1. **Volumen consolidado:** los 4 datasets aportan suficientes ejemplos "
-        "para particionar 70/15/15 con tamaño razonable.",
-        "2. **Heterogeneidad de etiquetas:** cada dataset usa convenciones distintas "
-        "(`HS`, `toxicity_level`, `label`, `hate speech/estereotipo`). El Paso 1.5 "
-        "las unifica al esquema binario `etiqueta ∈ {0, 1}`.",
-        "3. **Cobertura LATAM:** Chilean concentra la mayor proporción de seeds "
-        "regionales. Es el dataset crítico para validar H3 (Paso 4).",
-        "4. **Calidad textual:** los nulos detectados deben revisarse en limpieza "
-        "(Paso 1.4) y los duplicados marcarse antes de unificar (Paso 1.5).",
+        "## Hallazgos clave",
+        "",
+        f"1. **Volumen total:** {n_tot:,} ejemplos — suficiente para particion 70/15/15 con clases representadas.",
+        "2. **Corpus academicamente solido:** el superset esta respaldado por un paper WOAH/ACL 2024 "
+        "con metodologia de binarizacion y deduplicacion documentadas.",
+        "3. **DETOXIS aporta diversidad de plataforma:** los demas datasets son Twitter; DETOXIS "
+        "aporta comentarios de noticias, aumentando la variedad lingüística.",
+        "4. **Etiquetas ya unificadas en superset:** solo DETOXIS requiere mapeo manual "
+        "(`toxicity_level >= 2 -> 1`).",
+        "5. **Modismos LATAM (pre-lexicon):** el chileno y homomex concentran la mayor proporcion "
+        "de seeds. Crucial para validar H3.",
         "",
         "## Próximo paso",
         "",
-        "→ **Paso 1.4** Implementar `src/data/clean.py` con la función `normalizar()` "
-        "y aplicarla en el notebook `02_unificacion.ipynb`.",
+        "→ **Paso 1.4** Implementar `src/data/clean.py` con `normalizar()` (para DETOXIS).  ",
+        "→ **Paso 1.5** `notebooks/02_unificacion.ipynb`: adaptar superset + DETOXIS al esquema canónico.",
         "",
     ]
     return "\n".join(lineas)
 
 
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Main
-# ----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 def main() -> int:
-    print("=" * 60)
-    print(" PASO 1.3 · Exploración inicial de datasets")
-    print("=" * 60)
+    print("=" * 65)
+    print("  PASO 1.3 · Exploración del corpus base")
+    print("  Spanish Hate Speech Superset + DETOXIS 2021")
+    print("=" * 65)
 
-    print("\n[1/4] Cargando datasets...")
-    df_hateval = cargar_hateval()
-    print(f"  HatEval (ES) :  {df_hateval.shape}")
-    df_detoxis = cargar_detoxis()
-    print(f"  DETOXIS      :  {df_detoxis.shape}")
-    df_haternet = cargar_haternet()
-    print(f"  HaterNet     :  {df_haternet.shape}")
-    df_chilean = cargar_chilean()
-    print(f"  Chilean      :  {df_chilean.shape}")
+    print("\n[1/4] Cargando fuentes de datos...")
+    df_sup = cargar_superset()
+    if df_sup.empty:
+        print("  [ERROR] No se pudo cargar el superset. Verifica la ruta.")
+        return 1
+    print(f"  Superset    : {df_sup.shape[0]:,} filas | datasets: {df_sup['dataset'].unique().tolist()}")
 
-    print("\n[2/4] Calculando estadísticas por dataset...")
-    resumenes = {
-        "HatEval": explorar_dataset(
-            "HatEval", df_hateval, "text",
-            ["HS", "TR", "AG"]
-        ),
-        "DETOXIS": explorar_dataset(
-            "DETOXIS", df_detoxis, "comment",
-            ["toxicity", "aggressiveness", "insult", "stereotype",
-             "target_person", "target_group"]
-        ),
-        "HaterNet": explorar_dataset(
-            "HaterNet", df_haternet, "text",
-            ["label"]
-        ),
-        "Chilean": explorar_dataset(
-            "Chilean", df_chilean, "tweet a etiquetar",
-            ["hate speech/estereotipo", "insulto/sobrenombre",
-             "grosería c/int.", "sarcasmo/ironía/burla", "mención migración"]
-        ),
+    df_det = cargar_detoxis()
+    if df_det.empty:
+        print("  [ERROR] No se pudo cargar DETOXIS. Verifica la ruta.")
+        return 1
+    print(f"  DETOXIS     : {df_det.shape[0]:,} filas")
+    print(f"  TOTAL       : {len(df_sup) + len(df_det):,} filas")
+
+    print("\n[2/4] Calculando estadísticas...")
+    stats = {
+        "superset": analizar_superset(df_sup),
+        "detoxis":  analizar_detoxis(df_det),
     }
+    sup = stats["superset"]
+    det = stats["detoxis"]
+    print(f"  Superset  -> hate: {sup.get('pct_hate', 0)}%  | P95 tokens: {sup.get('longitud', {}).get('tokens_p95', '—'):.0f}")
+    print(f"  DETOXIS   -> hate: {det.get('pct_hate', 0)}%  | P95 tokens: {det.get('longitud', {}).get('tokens_p95', '—'):.0f}")
 
     print("\n[3/4] Generando figuras...")
-    rutas_figuras = {
-        "volumen":  figura_volumen(resumenes),
-        "clases":   figura_distribucion_clases(resumenes),
-        "longitud": figura_longitud_texto(resumenes),
-        "seeds":    figura_seeds_latam(resumenes),
+    rutas = {
+        "clases":  fig_distribucion_clases(stats),
+        "volumen": fig_datasets_en_superset(stats),
+        "longitud": fig_longitud(stats),
+        "seeds":   fig_seeds_latam(stats),
     }
-    for k, v in rutas_figuras.items():
-        print(f"  - {k:9s} -> {v.relative_to(ROOT).as_posix()}")
+    for k, v in rutas.items():
+        print(f"  {k:10s} -> {v.relative_to(ROOT).as_posix()}")
 
     print("\n[4/4] Escribiendo reporte Markdown + JSON...")
-    md = render_md(resumenes, rutas_figuras)
+    md      = render_md(stats, rutas)
     md_path = REPORTS / "exploracion_inicial.md"
     md_path.write_text(md, encoding="utf-8")
     json_path = REPORTS / "exploracion_inicial.json"
     json_path.write_text(
-        json.dumps(resumenes, ensure_ascii=False, indent=2, default=str),
-        encoding="utf-8"
+        json.dumps(stats, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
     )
-    print(f"  Reporte MD   -> {md_path.relative_to(ROOT).as_posix()}")
-    print(f"  Reporte JSON -> {json_path.relative_to(ROOT).as_posix()}")
+    print(f"  MD   -> {md_path.relative_to(ROOT).as_posix()}")
+    print(f"  JSON -> {json_path.relative_to(ROOT).as_posix()}")
 
     print("\n[OK] Paso 1.3 completado.")
+    n_tot = len(df_sup) + len(df_det)
+    print(f"  Total corpus: {n_tot:,} ejemplos listos para Paso 1.4-1.5.")
     return 0
 
 

@@ -1,0 +1,384 @@
+termino,variantes,pais,tipo,fuente,notas,version_introduccion
+pinche,pinche,MX,intensificador,ASALE,Precede a sustantivos con valor intensificador peyorativo. Muy frecuente en discurso de odio MX.,1
+chingar,chinga;chingado;chingada;chingón,MX,insulto,ASALE,Polisémico; en contexto de odio indica agresión directa.,1
+güey,wey;buey;güey;guey,MX,coloquial,ASALE,Apelativo muy frecuente; neutro o insultante según tono.,1
+naco,naca;nacos;nacas,MX,despectivo,ASALE,Clasista; denota bajo nivel cultural o socioeconómico.,1
+mamón,mamona;mamones,MX,insulto,ASALE,Persona pedante o desagradable.,1
+culero,culera;culeros,MX,insulto,ASALE,Cobarde o persona despreciable.,1
+pendejo,pendeja;pendejos,MX,insulto,ASALE,Tonto o cobarde; pan-LATAM con variantes de intensidad.,1
+cabrón,cabrona;cabrones,MX,insulto,ASALE,Originalmente cornudo; por extensión persona despreciable.,1
+cholo,chola;cholos,MX,despectivo,ASALE,Denotación varía por país; en MX con carga despectiva clasista.,1
+morro,morra;morros,MX,coloquial,curado_manual,Joven; puede usarse despectivamente.,1
+gacho,gacha;gachos,MX,coloquial,ASALE,Desagradable o de mala calidad.,1
+desmadre,desmadres,MX,coloquial,curado_manual,Desorden o caos; por extensión situación negativa.,1
+putazo,putazos,MX,insulto,curado_manual,Golpe fuerte; también insulto directo.,1
+joto,jota;jotos,MX,insulto,ASALE,Término homofóbico; muy frecuente en corpus de odio MX.,1
+maricón,maricona;maricones,MULTI,insulto,ASALE,Término homofóbico; pan-LATAM.,1
+chafa,chafas,MX,despectivo,ASALE,De mala calidad; persona o cosa mediocre.,1
+fresa,fresas,MX,despectivo,curado_manual,Persona pretenciosa de clase alta; equivalente a cheto AR.,1
+chilango,chilangos,MX,despectivo,curado_manual,Habitante de Ciudad de México; usado peyorativamente en provincias.,1
+mamada,mamadas,MX,coloquial,curado_manual,Tontería o cosa de mala calidad.,1
+prieto,prieta;prietos,MX,despectivo,ASALE,Persona de piel oscura; carga racial peyorativa.,1
+pendejada,pendejadas,MX,coloquial,curado_manual,Tontería; acción estúpida.,1
+carnal,carnales,MX,coloquial,ASALE,Amigo íntimo; hermano simbólico.,1
+cuate,cuates,MX,coloquial,ASALE,Amigo cercano; gemelo.,1
+chido,chida;chidos,MX,coloquial,curado_manual,Bueno o agradable; lo contrario en negación es peyorativo.,1
+órale,orale,MX,coloquial,curado_manual,Expresión de acuerdo o urgencia.,1
+chale,chales,MX,coloquial,curado_manual,Expresión de desacuerdo o decepción.,1
+buey,bueyes,MX,coloquial,ASALE,Variante ortográfica de güey.,1
+teporocho,teporochos,MX,despectivo,ASALE,Persona alcohólica o en situación de calle.,1
+pelado,pelada;pelados,MX,despectivo,ASALE,Persona de bajos recursos o rudo modales.,1
+lagartija,lagartijas,MX,despectivo,curado_manual,Persona aduladora o trepadora.,1
+neta,netas,MX,coloquial,curado_manual,La verdad; usado para afirmar.,1
+chamba,chambas,MX,coloquial,ASALE,Trabajo o empleo.,1
+andar pedo,pedos,MX,coloquial,curado_manual,Estar borracho.,1
+vergón,vergonas,MX,insulto,curado_manual,Excelente o terrible según contexto; puede ser insulto directo.,1
+ojete,ojetes,MX,insulto,curado_manual,Persona tacaña o despreciable.,1
+zángano,zángana;zánganos,MX,despectivo,ASALE,Persona holgazana.,1
+boludo,boluda;boludos,AR,insulto,ASALE,Tonto o imbécil; también apelativo neutro entre amigos.,1
+pelotudo,pelotuda;pelotudos,AR,insulto,curado_manual,Más intenso que boludo; muy tonto o inútil.,1
+gil,giles,AR,insulto,ASALE,Tonto o ingenuo.,1
+chabón,chabona;chabones,AR,coloquial,curado_manual,Tipo; persona (neutro).,1
+pibe,piba;pibes,AR,coloquial,ASALE,Joven; chico.,1
+mina,minas,AR,coloquial,ASALE,Mujer; chica.,1
+trucho,trucha;truchos,AR,despectivo,ASALE,Falso o de mala calidad.,1
+cagón,cagona;cagones,AR,insulto,curado_manual,Cobarde.,1
+otario,otaria;otarios,AR,despectivo,ASALE,Tonto o fácil de engañar.,1
+villero,villera;villeros,AR,despectivo,Pérez2022,Habitante de villa miseria; carga clasista fuerte.,1
+garca,garcas,AR,insulto,curado_manual,Persona que abusa o defrauda.,1
+hinchapelotas,hinchapelotas,AR,insulto,curado_manual,Persona molesta o pesada.,1
+turro,turra;turros,AR,despectivo,curado_manual,Persona deshonesta o de mal proceder.,1
+atorrante,atorrantes,AR,despectivo,ASALE,Persona vaga o de mal vivir.,1
+buchón,buchona;buchones,AR,despectivo,curado_manual,Soplón o delator.,1
+cheto,cheta;chetos,AR,despectivo,curado_manual,Persona pretenciosa de clase alta.,1
+pajero,pajera;pajeros,AR,insulto,curado_manual,Persona que miente o exagera; también masturbador.,1
+berreta,berretas,AR,despectivo,ASALE,De mala calidad o falso.,1
+cana,canas,AR,coloquial,curado_manual,Policía (la cana = la policía).,1
+recontra,recontra,AR,intensificador,curado_manual,Prefijo intensificador muy marcado regionalmente.,1
+piola,piola,AR,coloquial,ASALE,Listo/hábil o buena persona.,1
+laburar,laburo,AR,coloquial,ASALE,Trabajar; trabajo.,1
+morfar,morfo,AR,coloquial,ASALE,Comer.,1
+fiaca,fiacas,AR,coloquial,ASALE,Pereza o flojera.,1
+macana,macanas,AR,coloquial,ASALE,Error o problema; algo malo.,1
+forro,forra;forros,AR,insulto,curado_manual,Persona despreciable; preservativo.,1
+cretino,cretina;cretinos,AR,insulto,ASALE,Persona estúpida o de comportamiento despreciable.,1
+guaso,guasa;guasos,AR,despectivo,ASALE,Tosco o grosero; variante de huaso CL.,1
+chamuyar,chamuyo,AR,coloquial,curado_manual,Mentir con labia; seducir con palabras vacías.,1
+pucho,puchos,AR,coloquial,ASALE,Colilla de cigarrillo; cigarrillo.,1
+canchero,canchera;cancheros,AR,coloquial,curado_manual,Hábil o desenvuelto; a veces con tono despectivo.,1
+weón,weon;hueon;huevón;guevón,CL,coloquial,ASALE,Apelativo muy frecuente; insulto o afecto según contexto.,1
+conchetumadre,concha tu madre;cstm,CL,insulto,curado_manual,Insulto fuerte; equivalente a la gran puta.,1
+culiado,culiao;culeado,CL,insulto,curado_manual,Maldito; persona despreciable.,1
+maraco,maracos,CL,insulto,ASALE,Término homofóbico chileno.,1
+flaite,flaites,CL,despectivo,Pérez2022,Persona de clase baja con actitud antisocial; con carga clasista y racista.,1
+cuico,cuica;cuicos,CL,despectivo,curado_manual,Persona de clase alta con comportamiento pretencioso.,1
+wea,weas;huea;hueas,CL,coloquial,curado_manual,Cosa; situación; también insulto según tono.,1
+bacán,bacana;bacanes,CL,coloquial,ASALE,Bueno o genial; también persona de clase alta (AR).,1
+choro,chora;choros,CL,coloquial,ASALE,Valiente o ladrón; también elogio en CL.,1
+huasa,huaso;huasas,CL,despectivo,ASALE,Persona ruda del campo; equivalente a naif o inculto.,1
+pololo,polola;pololos,CL,coloquial,ASALE,Novio o novia.,1
+al tiro,al tiro,CL,coloquial,curado_manual,Inmediatamente.,1
+caleta,caletas,CL,coloquial,curado_manual,Mucho o bastante.,1
+luca,lucas,CL,coloquial,curado_manual,Mil pesos chilenos.,1
+puta la wea,puta la wea,CL,insulto,curado_manual,Expresión de fastidio fuerte.,1
+curao,curada;curaos,CL,coloquial,curado_manual,Borracho.,1
+caña,cañas,CL,coloquial,curado_manual,Resaca; también audacia.,1
+malcriado,malcriada;malcriados,CL,despectivo,ASALE,Persona sin modales o desconsiderada.,1
+mapuchento,mapuchenta,CL,despectivo,curado_manual,Término racista contra el pueblo mapuche; frecuente en corpus de odio CL.,1
+roto,rota;rotos,CL,despectivo,ASALE,Persona de clase baja; descortés. Carga clasista y racial.,1
+parce,parcero;parcera;parces,CO,coloquial,ASALE,Amigo cercano.,1
+marica,maricas,CO,coloquial,ASALE,Apelativo amistoso entre hombres en CO; también homofóbico según contexto.,1
+gonorrea,gonorreas,CO,insulto,curado_manual,Insulto fuerte; persona despreciable.,1
+hijueputa,hijueputa;hp,CO,insulto,curado_manual,Insulto fuerte; pan-LATAM con variantes.,1
+malparido,malparida;malparidos,CO,insulto,curado_manual,Insulto muy fuerte; análogo a hijo de puta.,1
+ñero,ñera;ñeros,CO,despectivo,ASALE,Persona de barrio marginal; carga clasista.,1
+güevón,guevón;güevona,CO,insulto,ASALE,Tonto; también apelativo neutro en CO.,1
+pirobo,piroba;pirobos,CO,insulto,curado_manual,Tonto o persona despreciable.,1
+sapo,sapa;sapos,CO,despectivo,ASALE,Soplón o persona entrometida.,1
+berraco,berraca;berracos,CO,intensificador,ASALE,Muy bueno o muy intenso; también difícil.,1
+chevere,chévere,CO,coloquial,ASALE,Bueno o agradable; pan-LATAM caribeño.,1
+bacano,bacana;bacanos,CO,coloquial,curado_manual,Bueno; equivalente a chevere.,1
+teso,tesa;tesos,CO,coloquial,curado_manual,Hábil o experto.,1
+tombo,tomba;tombos,CO,despectivo,curado_manual,Policía; término despectivo para las fuerzas del orden.,1
+verraco,verraca;verracos,CO,intensificador,curado_manual,Muy intenso; equivalente a berraco.,1
+cucho,cucha;cuchos,CO,coloquial,curado_manual,Padre; persona mayor.,1
+bobo,boba;bobos,CO,insulto,ASALE,Tonto o ingenuo.,1
+man,mans,CO,coloquial,curado_manual,Tipo; individuo (del inglés man).,1
+parchar,parche,CO,coloquial,curado_manual,Salir en grupo; juntarse con amigos.,1
+camello,camellos,CO,coloquial,curado_manual,Trabajo duro o empleo.,1
+causa,causas,PE,coloquial,curado_manual,Amigo; pata (PE).,1
+pata,patas,PE,coloquial,ASALE,Amigo en PE; también despectivo para piernas.,1
+chibolo,chibola;chibolos,PE,coloquial,curado_manual,Joven; chico adolescente.,1
+conchatumadre,concha tu madre,PE,insulto,curado_manual,Insulto fuerte peruano; variante de CTM.,1
+piña,piñas,PE,coloquial,curado_manual,Mala suerte.,1
+jato,jatos,PE,coloquial,curado_manual,Casa; hogar.,1
+serrano,serrana;serranos,PE,despectivo,Pérez2022,Persona de la sierra; carga racista y clasista fuerte en corpus PE.,1
+huachafería,huachafería,PE,despectivo,ASALE,Comportamiento cursi o de mal gusto.,1
+huachafo,huachafa;huachafos,PE,despectivo,ASALE,Persona cursi o de gustos vulgares.,1
+argolla,argollas,PE,despectivo,curado_manual,Grupo de amigos que se favorecen mutuamente; con connotación negativa.,1
+achorado,achorada;achorados,PE,coloquial,curado_manual,Agresivo o maleante.,1
+misio,misia;misios,PE,despectivo,curado_manual,Sin dinero; pobre (también CL).,1
+pata de perro,patas de perro,PE,despectivo,curado_manual,Persona que deambula mucho o sin rumbo.,1
+malograr,malogrado,PE,coloquial,curado_manual,Estropear; persona de mal comportamiento.,1
+botarse,botado,PE,coloquial,curado_manual,Portarse de forma exagerada o irresponsable.,1
+zambo,zamba;zambos,PE,despectivo,ASALE,Persona de rasgos afro-indígenas; carga racial.,1
+chamo,chama;chamos,VE,coloquial,ASALE,Joven; chico.,1
+coño,coños,VE,coloquial,ASALE,Expresión de sorpresa o enojo; también insulto.,1
+vergación,vergaciones,VE,intensificador,curado_manual,Expresión de intensidad; cosa enorme.,1
+vaina,vainas,VE,coloquial,ASALE,Cosa; situación.,1
+pana,panas,VE,coloquial,ASALE,Amigo íntimo.,1
+arrecho,arrecha;arrechos,VE,coloquial,ASALE,Enojado; también excitado sexualmente; en contexto: furioso.,1
+mamaguevo,mamaguevos,VE,insulto,curado_manual,Insulto fuerte venezolano.,1
+marico,marica;maricos,VE,insulto,ASALE,Término homofóbico; apelativo entre amigos en VE.,1
+chimbo,chimba;chimbos,VE,despectivo,curado_manual,De mala calidad; falso.,1
+lambucio,lambucio,VE,despectivo,curado_manual,Persona aduladora o aprovechadora.,1
+sifrino,sifrina;sifrinos,VE,despectivo,curado_manual,Persona de clase alta con actitud snob.,1
+tierrúo,tierrúa;tierrúos,VE,despectivo,curado_manual,Persona del campo con modales toscos.,1
+carajito,carajita;carajitos,VE,coloquial,curado_manual,Niño; joven (diminutivo de carajo).,1
+catire,catires,VE,coloquial,ASALE,Persona rubia o de piel clara; no siempre peyorativo.,1
+carajo,carajos,VE,insulto,ASALE,Insulto pan-LATAM; expresión de disgusto fuerte.,1
+zaramagullón,zaramagullones,VE,insulto,curado_manual,Persona torpe o tonta.,1
+ñaño,ñaña;ñaños,EC,coloquial,ASALE,Hermano o amigo cercano en EC.,1
+longo,longa;longos,EC,despectivo,ASALE,Persona de origen indígena; muy peyorativo en EC.,1
+guambra,guambras,EC,coloquial,ASALE,Joven en EC (de quechua wambra).,1
+chiro,chira;chiros,EC,despectivo,curado_manual,Sin dinero; en la pobreza.,1
+montubio,montubia;montubios,EC,coloquial,ASALE,Persona del campo costero; puede ser neutral o peyorativo.,1
+machetero,macheteros,EC,despectivo,curado_manual,Persona torpe o de trabajo bruto.,1
+tripaseca,tripasecas,EC,insulto,curado_manual,Persona muy delgada; insulto físico.,1
+achachay,achachay,EC,coloquial,curado_manual,Expresión de frío (de quechua).,1
+mamerto,mamerta;mamertos,EC,insulto,curado_manual,Tonto o ingenuo.,1
+bicho,bichos,EC,coloquial,curado_manual,Persona (neutro o despectivo según contexto).,1
+chulla,chullas,EC,coloquial,ASALE,Persona de Quito; también solitario o singular.,1
+puta,putas,MULTI,insulto,ASALE,Insulto femenino muy frecuente en corpus de odio pan-LATAM.,1
+puto,putos,MULTI,insulto,ASALE,Insulto; también homofóbico en MX y otros.,1
+hijo de puta,hdp;hp,MULTI,insulto,ASALE,Insulto pan-LATAM muy frecuente.,1
+mierda,mierdas,MULTI,insulto,ASALE,Insulto general pan-LATAM.,1
+idiota,idiotas,MULTI,insulto,ASALE,Tonto o imbécil; uso pan-LATAM.,1
+imbécil,imbeciles,MULTI,insulto,ASALE,Insulto pan-LATAM.,1
+estúpido,estupida;estúpidos,MULTI,insulto,ASALE,Insulto pan-LATAM.,1
+tarado,tarada;tarados,MULTI,insulto,ASALE,Tonto o deficiente; pan-LATAM.,1
+retrasado,retrasada;retrasados,MULTI,insulto,curado_manual,Insulto ableísta muy frecuente en corpus de odio.,1
+mongolo,mongola;mongolos,MULTI,insulto,curado_manual,Insulto ableísta derivado de mongolismo; frecuente en Twitter.,1
+animal,animales,MULTI,insulto,ASALE,Insulto que niega humanidad.,1
+bestia,bestias,MULTI,insulto,ASALE,Insulto; bruto o violento.,1
+zorra,zorras,MULTI,insulto,ASALE,Insulto sexista para mujer; prostituta o promiscua.,1
+perra,perras,MULTI,insulto,ASALE,Insulto sexista para mujer.,1
+prostituta,prostitutas,MULTI,insulto,ASALE,Insulto sexista frecuente en corpus de odio.,1
+subnormal,subnormales,MULTI,insulto,curado_manual,Insulto ableísta pan-LATAM.,1
+parásito,parasita;parásitos,MULTI,despectivo,curado_manual,Persona que vive a expensas de otros; frecuente en discurso xenófobo.,1
+muerto de hambre,muertos de hambre,MULTI,despectivo,curado_manual,Persona en extrema pobreza; carga clasista.,1
+andá a cagar,andá a la mierda,AR,insulto,curado_manual,Expresión de rechazo fuerte (AR).,1
+negro,negra;negros,MULTI,despectivo,Pérez2022,Racialmente peyorativo en muchos contextos LATAM; muy frecuente en corpus de odio.,1
+india,indio;indias,MULTI,despectivo,Pérez2022,Término racial peyorativo contra pueblos indígenas; frecuente en corpus de odio LATAM.,1
+femiorcas,femiorca,MULTI,despectivo,curado_manual,Neologismo despectivo contra activistas feministas; reciente en Twitter.,1
+feminazi,feminazis,MULTI,despectivo,Pérez2022,Término peyorativo contra feministas; frecuente en corpus de odio pan-LATAM.,1
+travelo,travelos,MULTI,insulto,curado_manual,Término despectivo para personas trans.,1
+trola,trolas,AR,insulto,curado_manual,Mentirosa; también término homofóbico.,1
+invertido,invertida;invertidos,MULTI,insulto,curado_manual,Término homofóbico antiguo pero presente en corpus.,1
+tortillera,tortilleras,MULTI,insulto,curado_manual,Término homofóbico para mujer lesbiana.,1
+machista,machistas,MULTI,despectivo,curado_manual,Puede ser insulto cuando se usa referencialmente en discurso de odio.,1
+racista,racistas,MULTI,despectivo,curado_manual,Puede ser insulto cuando se usa referencialmente.,1
+veneco,veneca;venecos,MULTI,despectivo,Pérez2022,Término xenófobo para venezolanos; frecuente en CL y CO.,1
+peruano,peruana;peruanos,MULTI,despectivo,curado_manual,Usado xenofóbicamente en CL y AR contra inmigrantes peruanos.,1
+boliviano,boliviana;bolivianos,MULTI,despectivo,curado_manual,Usado xenofóbicamente en AR y CL.,1
+haitianos,haitiana;haitiano,MULTI,despectivo,curado_manual,Usado xenofóbicamente en CL.,1
+inmigrante ilegal,ilegales,MULTI,despectivo,curado_manual,Término deshumanizante frecuente en discurso anti-inmigración.,1
+delincuentes,delincuente,MULTI,despectivo,curado_manual,Generalización colectiva; frecuente en discurso xenófobo.,1
+mapuche,mapuches,CL,despectivo,curado_manual,Neutral per se; aparece en contexto de odio racial en CL.,1
+árabe,árabes,MULTI,despectivo,curado_manual,Puede usarse con carga islamofóbica en contexto de odio.,1
+judío,judía;judíos,MULTI,despectivo,curado_manual,Puede usarse antisemíticamente en corpus de odio.,1
+gitano,gitana;gitanos,MULTI,despectivo,curado_manual,Usado de forma peyorativa en ES y LATAM.,1
+gordo,gorda;gordos,MULTI,insulto,curado_manual,Gordofobia; frecuente como insulto en redes.,1
+flaco,flaca;flacos,MULTI,insulto,curado_manual,Insulto físico por delgadez extrema.,1
+feo,fea;feos,MULTI,insulto,curado_manual,Insulto estético directo.,1
+viejo,vieja;viejos,MULTI,insulto,curado_manual,Edadismo; insulto por vejez.,1
+ruco,ruca;rucos,MX,despectivo,ASALE,Persona vieja; también lugar deteriorado.,1
+pordiosero,pordiosera;pordioseros,MULTI,despectivo,ASALE,Mendigo; con carga de desprecio clasista.,1
+vago,vaga;vagos,MULTI,despectivo,ASALE,Persona holgazana; sin oficio.,1
+borracho,borracha;borrachos,MULTI,despectivo,ASALE,Alcohólico; persona ebria.,1
+drogadicto,drogadicta;drogadictos,MULTI,despectivo,curado_manual,Frecuente en discurso de desprecio clasista.,1
+criminal,criminales,MULTI,despectivo,curado_manual,Generalización frecuente en discurso xenófobo y racista.,1
+asesino,asesina;asesinos,MULTI,insulto,curado_manual,Acusación directa como insulto.,1
+terrorista,terroristas,MULTI,despectivo,curado_manual,Generalización islamofóbica o contra grupos étnicos.,1
+desgraciado,desgraciada;desgraciados,MULTI,insulto,ASALE,Insulto pan-LATAM.,1
+maldito,maldita;malditos,MULTI,insulto,ASALE,Insulto pan-LATAM muy frecuente.,1
+miserable,miserables,MULTI,insulto,ASALE,Persona despreciable o en extrema pobreza con carga peyorativa.,1
+inútil,inútiles,MULTI,insulto,ASALE,Persona incompetente.,1
+incapaz,incapaces,MULTI,insulto,ASALE,Persona sin habilidades.,1
+bruto,bruta;brutos,MULTI,insulto,ASALE,Persona violenta o tosca sin educación.,1
+ignorante,ignorantes,MULTI,insulto,ASALE,Insulto intelectual pan-LATAM.,1
+analfabeto,analfabeta;analfabetos,MULTI,insulto,curado_manual,Insulto intelectual frecuente en Twitter.,1
+salvaje,salvajes,MULTI,despectivo,ASALE,Deshumanizante; frecuente en discurso racista.,1
+bárbaro,bárbara;bárbaros,MULTI,despectivo,ASALE,Primitivo o violento; deshumanizante.,1
+animal racional,animales,MULTI,insulto,curado_manual,Negación de humanidad.,1
+escoria,escorias,MULTI,despectivo,Pérez2022,Término deshumanizante muy frecuente en corpus de odio LATAM.,1
+basura,basuras,MULTI,despectivo,Pérez2022,Término deshumanizante frecuente en discurso de odio.,1
+lacra,lacras,MULTI,despectivo,ASALE,Persona perjudicial para la sociedad; muy frecuente en corpus de odio.,1
+rémora,rémoras,MULTI,despectivo,curado_manual,Persona que parasita; peyorativo.,1
+plaga,plagas,MULTI,despectivo,curado_manual,Deshumanizante; equivalente a lacra.,1
+pobre diablo,pobres diablos,MULTI,despectivo,ASALE,Persona digna de lástima o desprecio.,1
+llorón,llorona;llorones,MULTI,despectivo,ASALE,Persona quejumbrosa.,1
+victimario,victimarios,MULTI,despectivo,curado_manual,Acusación directa.,1
+victimista,victimistas,MULTI,despectivo,curado_manual,Persona que se queja excesivamente; frecuente contra grupos vulnerables.,1
+manipulador,manipuladora;manipuladores,MULTI,despectivo,curado_manual,Insulto de intención en redes.,1
+hipócrita,hipócritas,MULTI,despectivo,ASALE,Insulto de carácter pan-LATAM.,1
+mentiroso,mentirosa;mentirosos,MULTI,insulto,ASALE,Insulto directo.,1
+traidor,traidora;traidores,MULTI,insulto,ASALE,Insulto fuerte.,1
+cobarde,cobardes,MULTI,insulto,ASALE,Insulto de valentía.,1
+loco,loca;locos,MULTI,insulto,curado_manual,Insulto que niega salud mental; frecuente en redes.,1
+psicópata,psicópatas,MULTI,insulto,curado_manual,Insulto de salud mental frecuente en Twitter.,1
+esquizofrénico,esquizofrénica;esquizofrénicos,MULTI,insulto,curado_manual,Insulto ableísta que niega salud mental.,1
+chinguen a su madre,chingue su madre,MX,insulto,curado_manual,Expresión de rechazo fuerte MX.,1
+vergüenza,vergüenzas,MULTI,despectivo,ASALE,Usado como insulto colectivo (eres una vergüenza).,1
+asco,asco,MULTI,despectivo,ASALE,Expresión de repulsión; frecuente en hate speech.,1
+repugnante,repugnantes,MULTI,despectivo,ASALE,Insulto físico o moral.,1
+asqueroso,asquerosa;asquerosos,MULTI,insulto,ASALE,Insulto físico o moral pan-LATAM.,1
+nauseabundo,nauseabunda,MULTI,insulto,curado_manual,Muy repulsivo; escaso pero presente en corpus.,1
+putamadre,puta madre,MULTI,insulto,curado_manual,Expresión de enojo fuerte; pan-LATAM.,1
+reconcha,reconcha,CL,insulto,curado_manual,Intensificación de insulto chileno.,1
+saco de weas,sacos de weas,CL,insulto,curado_manual,Insulto compuesto chileno.,1
+sacoweas,saco weas,CL,insulto,curado_manual,Variante coloquial.,1
+culeón,culeona;culeones,CL,insulto,curado_manual,Cobarde (CL).,1
+marucha,maruchas,CL,despectivo,curado_manual,Término de clase para mujer de bajos recursos.,1
+chaucha,chauchas,CL,despectivo,ASALE,Moneda de poco valor; persona insignificante.,1
+cagado de miedo,cagados de miedo,MULTI,insulto,curado_manual,Cobarde extremo.,1
+picante,picantes,CL,despectivo,curado_manual,Persona de baja extracción con actitud agresiva (CL).,1
+poto,potos,CL,coloquial,ASALE,Trasero; puede usarse en insultos.,1
+tata,tatas,CL,coloquial,ASALE,Abuelo; padre en lenguaje infantil (neutro).,1
+huevada,huevadas,CL,coloquial,curado_manual,Cosa o tontería (CL/PE).,1
+huevón,huevonas,PE,insulto,ASALE,Variante peruana de güevón; tonto o apelativo.,1
+cojudo,cojuda;cojudos,PE,insulto,ASALE,Tonto o imbécil (PE y BO).,1
+compadre,compadres,MULTI,coloquial,ASALE,Amigo o colega (neutro pero marcador regional),1
+cuñado,cuñados,MULTI,coloquial,curado_manual,Apelativo; puede ser despectivo en contexto de meme.,1
+broder,broders,MULTI,coloquial,curado_manual,Amigo (del inglés brother); juvenil pan-LATAM.,1
+hermano,hermanos,MULTI,coloquial,ASALE,Apelativo de solidaridad; puede ser irónico.,1
+bróder,bróders,PE,coloquial,curado_manual,Variante ortográfica de broder.,1
+wepa,wepas,MULTI,coloquial,curado_manual,Expresión de alegría o aliento (Caribe).,1
+chévere,cheveres,MULTI,coloquial,ASALE,Bueno o agradable (CO/VE/Caribe).,1
+cheverísimo,cheverísimo,MULTI,intensificador,curado_manual,Superlativo de chévere.,1
+malandro,malandros,VE,despectivo,ASALE,Delincuente o persona peligrosa (VE).,1
+plomo,plomos,VE,despectivo,curado_manual,Bala o violencia (VE); amenaza.,1
+pistolero,pistoleros,MULTI,despectivo,curado_manual,Persona armada o delincuente.,1
+rata,ratas,MULTI,despectivo,ASALE,Ladrón o persona traicionera.,1
+culebra,culebras,MULTI,despectivo,ASALE,Traidor o persona desleal.,1
+víbora,víboras,MULTI,despectivo,ASALE,Persona que traiciona o hace daño.,1
+hiena,hienas,MULTI,despectivo,curado_manual,Deshumanizante; persona que se aprovecha de los débiles.,1
+buitre,buitres,MULTI,despectivo,curado_manual,Deshumanizante; se aprovecha de situaciones de desgracia.,1
+lobo,loba;lobos,MULTI,despectivo,curado_manual,Puede usarse como deshumanizante.,1
+perro,perra;perros,MULTI,insulto,ASALE,Insulto deshumanizante pan-LATAM.,1
+chancho,chancha;chanchos,MULTI,insulto,ASALE,Sucio o glotón; deshumanizante.,1
+cerdo,cerda;cerdos,MULTI,insulto,ASALE,Sucio o persona despreciable.,1
+burro,burra;burros,MULTI,insulto,ASALE,Tonto o testarudo.,1
+asno,asna;asnos,MULTI,insulto,ASALE,Tonto; sinónimo de burro.,1
+idiota del orto,idiotas del orto,AR,insulto,curado_manual,Insulto compuesto AR muy fuerte.,1
+sorete,soretes,AR,insulto,curado_manual,Excremento; persona despreciable (AR).,1
+pancho,panchos,AR,coloquial,curado_manual,Tranquilo; también nombre propio usado despectivamente.,1
+garca del orto,garcas del orto,AR,insulto,curado_manual,Insulto compuesto muy fuerte AR.,1
+ortiba,ortibas,AR,despectivo,curado_manual,Soplón o persona que delata (AR).,1
+otario del campo,otarios del campo,AR,insulto,curado_manual,Insulto clasista AR.,1
+negrada,negrería,AR,despectivo,Pérez2022,Término racial colectivo con carga despectiva fuerte AR.,1
+cabecita negra,cabecitas negras,AR,despectivo,Pérez2022,Término racial peyorativo histórico en AR para personas de rasgos indígenas.,1
+facha,fachas,MULTI,despectivo,curado_manual,Persona de ultraderecha (ES/AR); también persona desaliñada.,1
+facho,fachos,MULTI,despectivo,curado_manual,Fascista o persona de ultraderecha.,1
+zurdo,zurda;zurdos,MULTI,despectivo,curado_manual,Persona de izquierda; usado peyorativamente por la derecha.,1
+comunista,comunistas,MULTI,despectivo,curado_manual,Frecuente como insulto en discurso político de odio.,1
+castrochavismo,castrochavistas,MULTI,despectivo,curado_manual,Término despectivo político pan-LATAM (VE/CU).,1
+globalista,globalistas,MULTI,despectivo,curado_manual,Término conspiranoico frecuente; a veces con carga antisemita.,1
+sionista,sionistas,MULTI,despectivo,curado_manual,Puede usarse con carga antisemita en corpus de odio.,1
+gorila,gorilas,AR,despectivo,curado_manual,Persona de ultraderecha golpista (AR).; también deshumanizante.,1
+montonero,montoneros,AR,despectivo,curado_manual,Usado peyorativamente en discurso de derecha AR.,1
+terruco,terrucos,PE,despectivo,curado_manual,Terrorista o persona sospechosa (PE); muy cargado.,1
+pituco,pituca;pitucos,PE,despectivo,curado_manual,Persona de clase alta con actitud snob (PE).,1
+comeflor,comeflores,MULTI,despectivo,curado_manual,Persona ingenua o pacifista en exceso; también ambientalista despectivo.,1
+ecoterrorista,ecoterroristas,MULTI,despectivo,curado_manual,Activista ambiental visto como extremista.,1
+woke,wokes,MULTI,despectivo,curado_manual,Activista social; usado peyorativamente en redes.,1
+progre,progres,MULTI,despectivo,curado_manual,Persona progresista; usado peyorativamente.,1
+izquierdista,izquierdistas,MULTI,despectivo,curado_manual,Persona de izquierda; en contexto de odio político.,1
+pichula,pichulas,CL,coloquial,curado_manual,Pene (infantil en CL); puede usarse en insultos.,1
+concha,conchas,CL,insulto,ASALE,Genitales femeninos; insulto fuerte en CL.,1
+culiao,culiá;culiada,CL,insulto,curado_manual,Variante de culiado; insulto muy frecuente en Twitter CL.,1
+hueón,hueones,CL,coloquial,curado_manual,Variante ortográfica de weón.,1
+conchesumare,conchesumare,CL,insulto,curado_manual,Variante de conchetumadre CL.,1
+recontracagado,recontracagada,AR,insulto,curado_manual,Cobarde extremo (AR intensificado).,1
+cagarse,cagado,MULTI,coloquial,curado_manual,Acobardarse; también tener mala suerte.,1
+mandar a la mierda,mandá a la mierda,MULTI,insulto,curado_manual,Expresión de rechazo y desprecio fuerte.,1
+andate a la mierda,andate a la mierda,AR,insulto,curado_manual,Expresión de rechazo AR.,1
+metete el dedo,metete el dedo,AR,insulto,curado_manual,Expresión grosera de rechazo AR.,1
+que te den,que te den,MULTI,insulto,curado_manual,Expresión de rechazo equivalente a andate a la mierda.,1
+vete a la mierda,vete a la mierda,MULTI,insulto,curado_manual,Rechazo directo pan-LATAM.,1
+ándate a cagar,andate a cagar,CL,insulto,curado_manual,Rechazo fuerte CL.,1
+wn,wns,CL,coloquial,curado_manual,Abreviatura de weón en Twitter CL; frecuente en corpus.,1
+ctm,ctm,CL,insulto,curado_manual,Abreviatura de conchetumadre; muy frecuente en Twitter CL.,1
+ql,ql,CL,insulto,curado_manual,Abreviatura de culiao; frecuente en corpus CL.,1
+hdp,hdp;hp,MULTI,insulto,curado_manual,Abreviatura de hijo de puta; frecuente en corpus pan-LATAM.,1
+pto,pto,MULTI,insulto,curado_manual,Abreviatura de puto en Twitter.,1
+ptm,ptm,MULTI,insulto,curado_manual,Abreviatura de putamadre.,1
+mamabicho,mamabicho,MULTI,insulto,curado_manual,Insulto de tipo sexual pan-LATAM.,1
+mamawebo,mamawebo,VE,insulto,curado_manual,Variante ortográfica de mamaguevo.,1
+comemierda,comemierdas,MULTI,insulto,curado_manual,Persona que acepta o traga mentiras; insulto pan-LATAM.,1
+sacoleva,sacolevas,CO,despectivo,curado_manual,Persona aduladora (CO).,1
+zanahoria,zanahorias,CO,despectivo,curado_manual,Persona ingenua o sin picardía (CO).,1
+tierrero,tierrera;tierreros,CO,despectivo,curado_manual,Persona del campo con modales toscos (CO).,1
+gamín,gamines,CO,despectivo,ASALE,Niño de la calle; persona marginal (CO).,1
+jíbaro,jíbara;jíbaros,MULTI,despectivo,curado_manual,Vendedor de drogas (PR/DO); también persona ruda.,1
+gueto,guetos,MULTI,despectivo,curado_manual,Zona marginal; persona de zona marginal (puede ser neutro o peyorativo).,1
+matón,matona;matones,MULTI,despectivo,ASALE,Persona violenta que amenaza.,1
+gángster,gángsters,MULTI,despectivo,curado_manual,Delincuente organizado; también como insulto.,1
+caco,cacos,MULTI,despectivo,ASALE,Ladrón (CL/ES).,1
+ratero,ratera;rateros,MULTI,despectivo,ASALE,Ladrón de poca monta.,1
+chorear,choreo,CL,coloquial,curado_manual,Robar (CL).,1
+afanar,afano,AR,coloquial,curado_manual,Robar (AR).,1
+punguista,punguistas,AR,despectivo,ASALE,Carterista o ladrón.,1
+mecánicos,mecánico,MULTI,despectivo,curado_manual,Persona torpe o inexperta.,1
+techado,techada,MULTI,despectivo,curado_manual,Persona de pocas capacidades mentales (lunfardo AR).,1
+bichicome,bichicomio,AR,despectivo,curado_manual,Persona en extrema pobreza; de mal vivir (AR lunfardo).,1
+piantado,piantada;piantados,AR,coloquial,curado_manual,Loco o demente (AR lunfardo).,1
+rayado,rayada;rayados,MULTI,coloquial,curado_manual,Loco o desquiciado.,1
+volado,volada;volados,MULTI,coloquial,curado_manual,Distraído o drogado.,1
+flashero,flashera;flasheros,AR,despectivo,curado_manual,Persona que exagera o miente (AR).,1
+fanfarrón,fanfarrona;fanfarrones,MULTI,despectivo,ASALE,Persona que presume falsamente.,1
+prepotente,prepotentes,MULTI,despectivo,ASALE,Persona abusiva o arrogante.,1
+soberbio,soberbia;soberbios,MULTI,despectivo,ASALE,Persona arrogante.,1
+engreído,engreída;engreídos,MULTI,despectivo,ASALE,Persona que se cree superior.,1
+creído,creída;creídos,MULTI,despectivo,ASALE,Persona que se cree superior (PE/AR).,1
+alzado,alzada;alzados,MULTI,despectivo,ASALE,Persona que se pasa de confianzuda o insolente.,1
+descarado,descarada;descarados,MULTI,despectivo,ASALE,Persona sin vergüenza.,1
+sinvergüenza,sinvergüenzas,MULTI,insulto,ASALE,Insulto pan-LATAM muy frecuente.,1
+cara de piedra,caras de piedra,MULTI,despectivo,curado_manual,Persona que no se avergüenza de nada.,1
+cara dura,caras duras,MULTI,despectivo,curado_manual,Persona descarada.,1
+aprovechador,aprovechadora;aprovechadores,MULTI,despectivo,ASALE,Persona que se aprovecha de otros.,1
+oportunista,oportunistas,MULTI,despectivo,ASALE,Persona que actúa por conveniencia.,1
+trepador,trepadora;trepadores,MULTI,despectivo,curado_manual,Persona que escala socialmente de forma deshonesta.,1
+lambón,lambona;lambones,CO,despectivo,curado_manual,Adulador servil (CO).,1
+chupamedias,chupamedias,AR,despectivo,curado_manual,Adulador servil (AR).,1
+chupaculos,chupaculos,MULTI,despectivo,curado_manual,Adulador servil pan-LATAM.,1
+lamedero,lamedera,MULTI,despectivo,curado_manual,Adulador exagerado.,1
+barrilete,barriletes,AR,coloquial,curado_manual,Persona que se deja llevar; sin criterio propio.,1
+títere,títeres,MULTI,despectivo,curado_manual,Persona manejada por otros.,1
+pelele,peleles,MULTI,despectivo,ASALE,Persona sin voluntad propia.,1
+monigote,monigotes,MULTI,despectivo,ASALE,Persona sin sustancia.,1
+payaso,payasa;payasos,MULTI,insulto,ASALE,Persona que no se toma en serio; ridículo.,1
+bufón,bufones,MULTI,insulto,ASALE,Persona ridícula.,1
+ridículo,ridícula;ridículos,MULTI,insulto,ASALE,Insulto pan-LATAM frecuente en Twitter.,1
+hazmerreír,hazmerreír,MULTI,insulto,curado_manual,Persona que hace el ridículo.,1
+clown,clowns,MULTI,insulto,curado_manual,Del inglés; equivalente a payaso en redes.,1
+lacayo,lacayos,MULTI,despectivo,ASALE,Servidor servil; persona sin dignidad propia.,1
+esclavo,esclava;esclavos,MULTI,despectivo,ASALE,Puede usarse peyorativamente.,1
+peón,peones,MULTI,despectivo,ASALE,Persona de baja jerarquía; carga clasista.,1
+inferior,inferiores,MULTI,despectivo,curado_manual,Término deshumanizante frecuente.,1
+subhumano,subhumana;subhumanos,MULTI,despectivo,Pérez2022,Término deshumanizante extremo; frecuente en corpus de odio.,1
+infrahumano,infrahumanos,MULTI,despectivo,curado_manual,Variante de subhumano.,1
+inhumano,inhumanos,MULTI,despectivo,curado_manual,Otro término deshumanizante.,1
+degenerado,degenerada;degenerados,MULTI,insulto,ASALE,Insulto moral y frecuentemente sexual.,1
+pervertido,pervertida;pervertidos,MULTI,insulto,ASALE,Insulto sexual pan-LATAM.,1
+depravado,depravada;depravados,MULTI,insulto,ASALE,Insulto moral fuerte.,1
+vicioso,viciosa;viciosos,MULTI,insulto,ASALE,Persona con vicios; insulto moral.,1
+corrupto,corrupta;corruptos,MULTI,insulto,ASALE,Insulto político y moral frecuente.,1
+ladrón,ladrona;ladrones,MULTI,insulto,ASALE,Acusación directa como insulto.,1
+choritero,choritera,AR,despectivo,curado_manual,Persona de bajo nivel o que roba (AR slang).,1
+mechero,mechera;mecheros,AR,despectivo,curado_manual,Persona que roba en tiendas (AR/CL).,1
+transa,transas,MULTI,despectivo,curado_manual,Vendedor de droga; también traicionero.,1
+narco,narcos,MULTI,despectivo,curado_manual,Narcotraficante; en contexto de odio puede generalizarse racialmente.,1
+yuta,yutas,AR,despectivo,curado_manual,Policía (AR lunfardo); también marica en algunos contextos.,1
+mafia,mafias,MULTI,despectivo,curado_manual,Organización criminal; también insulto colectivo.,1
+carteles,cartel,MULTI,despectivo,curado_manual,Organización narcotraficante; generalización regional racista.,1
