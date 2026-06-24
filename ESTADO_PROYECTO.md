@@ -1,7 +1,7 @@
 # ESTADO GENERAL DEL PROYECTO DE TESIS
 
-**Última revisión:** 2026-06-17  
-**Progreso actual:** Paso 1.5 completado (Fase 1: Gestión de Datos)
+**Última revisión:** 2026-06-24  
+**Progreso actual:** Paso 1.8 completado (Fase 1: Gestión de Datos)
 
 ---
 
@@ -26,9 +26,9 @@
 | 1.3 | Exploración del corpus base (stats, figuras, reporte) | ✅ Completado |
 | 1.4 | Crear `normalizar()` en `src/data/clean.py` (solo DETOXIS) | ✅ Completado |
 | 1.5 | Unificar superset + DETOXIS al esquema canónico → `corpus_combinado.parquet` | ✅ Completado |
-| **1.6** | **⚠️ NO EXISTE — ver sección 5** | ❌ Faltante |
-| 1.7 | Construir lexicón LATAM + enriquecer corpus con `tiene_modismo` | ⬜ Pendiente |
-| 1.8 | Validación de calidad (`qc.py`) | ⬜ Pendiente |
+| 1.6 | Construir lexicón de modismos latinoamericanos (`modismos_latam_v1.csv`) | ✅ Completado |
+| 1.7 | Enriquecer corpus con `tiene_modismo` → `corpus_v1_enriquecido.parquet` | ✅ Completado |
+| **1.8** | **Validación de calidad (`qc.py`) + reporte `qc_corpus_v1.md`** | ✅ **Completado** |
 | 1.9 | Particionar en train/val/test (70/15/15 estratificado) | ⬜ Pendiente |
 | 1.10 | Crear `MANIFEST.json` con hashes y versiones | ⬜ Pendiente |
 | 1.11 | Generar reporte QC final del corpus v1 | ⬜ Pendiente |
@@ -180,7 +180,7 @@ Agregar explícitamente el **Paso 1.6 — Construir lexicón LATAM** entre el pa
 ```
 PROGRESO GENERAL
 ═══════════════════════════════════════════════════════
-Fase 1: Datos          ████████░░░░░░░░░░░  ~45%  (1.5 de 1.11)
+Fase 1: Datos          ████████████░░░░░░░  ~65%  (1.8 de 1.11)
 Fase 2: Entrenamiento  ░░░░░░░░░░░░░░░░░░░   0%
 Fase 3: Evaluación     ░░░░░░░░░░░░░░░░░░░   0%
 Fase 4: Modismos/H3    ░░░░░░░░░░░░░░░░░░░   0%
@@ -189,18 +189,15 @@ Fase 6: Backend API    ░░░░░░░░░░░░░░░░░░░
 Fase 7: Extensión      ███████████████████  100%  (sin BETO)
 Fase 8: Validación     ░░░░░░░░░░░░░░░░░░░   0%
 ═══════════════════════════════════════════════════════
-TOTAL ESTIMADO:        ~25% completado
+TOTAL ESTIMADO:        ~30% completado
 ```
 
 ### Próximos pasos inmediatos (en orden)
 
-1. **Paso 1.6** — Construir `data/lexicons/modismos_latam_v1.csv` (≥500 términos)
-2. **Paso 1.7** — Implementar `src/data/lexicon.py` + enriquecer corpus con `tiene_modismo`
-3. **Paso 1.8** — QC del corpus enriquecido
-4. **Paso 1.9** — Particionar train/val/test
-5. **Paso 1.10** — MANIFEST.json
-6. **Paso 1.11** — Reporte QC final
-7. **Fase 2** — Entrenamiento de modelos (requiere GPU)
+1. **Paso 1.9** — Particionar en train/val/test (70/15/15 estratificado)
+2. **Paso 1.10** — Crear `MANIFEST.json` con SHA-256 y versiones
+3. **Paso 1.11** — Reporte QC final del corpus v1
+4. **Fase 2** — Entrenamiento de modelos (requiere GPU)
 
 ---
 

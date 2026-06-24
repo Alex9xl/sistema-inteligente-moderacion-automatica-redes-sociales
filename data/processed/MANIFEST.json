@@ -1,0 +1,59 @@
+{
+  "corpus": {
+    "version": 1,
+    "file": "corpus_v1_enriquecido.parquet",
+    "sha256": "4a76b4005244ce454a08dc2c1580807bc2876e911f236e2ad2bc779e799c9c3c",
+    "git_commit": "0d37d0e14b3c011fd3233052fff89965f45b6eea",
+    "created_at": "2026-06-24T15:38:32Z",
+    "datasets_origen": [
+      "spanish-hate-speech-superset-v2024",
+      "detoxis-2021"
+    ],
+    "lexicon_version": "modismos_latam_v1.csv",
+    "n_total": 33318,
+    "n_hate": 7603,
+    "n_no_hate": 25715,
+    "nota": "33,318 filas antes de deduplicación. Tras eliminar 331 duplicados quedan 32,987 filas distribuidas en los splits train/val/test."
+  },
+  "splits": {
+    "deduplication": {
+      "duplicados_exactos_eliminados": 217,
+      "duplicados_normalizados_eliminados": 114,
+      "total_eliminados": 331,
+      "corpus_limpio": 32987
+    },
+    "train": {
+      "file": "train.parquet",
+      "sha256": "24150e7edac3bcbf167c6183941997e936acdf1f14f425be95545b5ad7db7fc8",
+      "n_filas": 23090,
+      "proporcion": "70%",
+      "pct_hate": "22.8%"
+    },
+    "val": {
+      "file": "val.parquet",
+      "sha256": "99445ea7397cdbe36d6fa4dae31a7bb479523b05417157df1b4864a303853cfc",
+      "n_filas": 4948,
+      "proporcion": "15%",
+      "pct_hate": "22.8%"
+    },
+    "test": {
+      "file": "test.parquet",
+      "sha256": "f07165adca005065e9a9e65f6385a8670fe61edfe3d23ecca700278c0fbaa59b",
+      "n_filas": 4949,
+      "proporcion": "15%",
+      "pct_hate": "22.8%"
+    }
+  },
+  "leakage_check": {
+    "train_val": 0,
+    "train_test": 0,
+    "val_test": 0
+  },
+  "pipeline": {
+    "clean_py": "src/data/clean.py",
+    "unify_py": "src/data/unify.py",
+    "enrich_py": "src/data/enrich.py",
+    "qc_py": "src/data/qc.py",
+    "split_py": "src/data/split.py"
+  }
+}

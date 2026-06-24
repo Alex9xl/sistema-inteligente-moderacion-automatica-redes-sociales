@@ -533,37 +533,94 @@ print(lex.version_info)
 
 ### Paso 1.7 - Enriquecer corpus con `tiene_modismo`
 
+**Implementar:** `src/data/enrich.py`
 
-**Crear:** `src/data/lexicon.py`
+Este paso carga el corpus combinado (Paso 1.5), aplica el lexicón LATAM (Paso 1.6) para calcular la columna `tiene_modismo`, agrega `n_tokens_aprox`, y guarda el corpus enriquecido.
 
-```python
-import re
-import pandas as pd
+El campo `tiene_modismo` es **OBSERVACIONAL**: se usa para segmentar la evaluación (H3), NO como feature de entrenamiento del modelo.
 
-class LexiconLatam:
-    def __init__(self, csv_path: str):
-        self.df = pd.read_csv(csv_path)
-        self.terminos = set()
-        for _, row in self.df.iterrows():
-            self.terminos.add(row["termino"].lower())
-            for var in str(row["variantes"]).split(";"):
-                self.terminos.add(var.strip().lower())
+**Cómo ejecutar:**
 
-    def tiene_modismo(self, texto: str) -> bool:
-        """Detectar si el texto contiene algún modismo LATAM."""
-        tokens = re.findall(r"\w+", texto.lower())
-        return any(t in self.terminos for t in tokens)
-
-# En el notebook 02_unificacion.ipynb:
-from src.data.lexicon import LexiconLatam
-
-lexicon = LexiconLatam("../data/lexicons/modismos_latam_v1.csv")
-corpus["tiene_modismo"] = corpus["texto"].apply(lexicon.tiene_modismo)
-
-print("Proporción con modismos:", corpus["tiene_modismo"].mean())
+```powershell
+.\venv\Scripts\python.exe src\data\enrich.py
 ```
 
-**Output:** Corpus actualizado en `data/interim/corpus_enriquecido.parquet`
+**Cómo usar como módulo en pasos posteriores:**
+
+```python
+from src.data.enrich import enriquecer_corpus
+
+corpus = enriquecer_corpus(verbose=True)
+
+# O solo leer el Parquet ya generado
+import pandas as pd
+corpus = pd.read_parquet("data/processed/corpus_v1_enriquecido.parquet")
+```
+
+**Output:** `data/processed/corpus_v1_enriquecido.parquet`
+
+---
+
+### OK REALIZADO - Paso 1.7
+
+**Se hizo:**
+
+- Se implementó `src/data/enrich.py` con la función `enriquecer_corpus()`.
+- Se cargó `data/interim/corpus_combinado.parquet` (33,318 filas del Paso 1.5).
+- Se aplicó `LexiconLatam.tiene_modismo()` sobre cada texto para calcular la columna booleana `tiene_modismo`.
+- Se calculó `n_tokens_aprox` (longitud en tokens por whitespace split, tipo `int16`).
+- Se generó la distribución cruzada `etiqueta x tiene_modismo` para verificar balance.
+- Se guardó el resultado en `data/processed/corpus_v1_enriquecido.parquet` con compresión Snappy.
+- Se validó: dtype correcto (`bool`), sin nulos, cobertura ≥ 15%.
+
+**Resultado de la ejecución:**
+
+| Métrica | Valor |
+| ------- | ----- |
+| Total filas | **33,318** |
+| Con modismo (`True`) | **17,722** (53.19%) |
+| Sin modismo (`False`) | **15,596** (46.81%) |
+| Requisito ≥ 15% | **✓ Cumplido** |
+| Tokens: mediana | **20** |
+| Tokens: P95 | **50** |
+| Tokens: max | **556** |
+| Tamaño del archivo | **3,623.6 KB** |
+
+**Distribución cruzada (etiqueta x tiene_modismo):**
+
+| | con_modismo | sin_modismo | Total |
+|---|---|---|---|
+| **hate** | 5,711 | 1,892 | 7,603 |
+| **no_hate** | 12,011 | 13,704 | 25,715 |
+| **Total** | 17,722 | 15,596 | 33,318 |
+
+**Observación:** El 75.1% de las instancias hate contienen modismos LATAM vs 46.7% de las no_hate. Esto sugiere que los modismos LATAM están más presentes en el discurso de odio, lo cual es relevante para H3.
+
+**Columnas del corpus enriquecido:**
+
+| Columna | Tipo | Descripción |
+| ------- | ---- | ----------- |
+| `id` | string | ID único (`<dataset>_<n>`) |
+| `texto` | string | Texto normalizado |
+| `etiqueta` | int8 | 0=no_hate, 1=hate |
+| `dataset` | category | Origen (hateval, haternet, etc.) |
+| `source` | string | Plataforma |
+| `nb_annotators` | int16 | Número de anotadores |
+| `tweet_id` | string | ID del tweet original |
+| `pais` | category | País del autor |
+| `tiene_modismo` | bool | **NUEVA** - Contiene modismo LATAM |
+| `n_tokens_aprox` | int16 | **NUEVA** - Longitud en tokens |
+
+**Archivos generados:**
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `src/data/enrich.py` | Módulo `enriquecer_corpus()` con validaciones integradas |
+| `data/processed/corpus_v1_enriquecido.parquet` | Corpus con `tiene_modismo` y `n_tokens_aprox` |
+
+---
+
+
 
 ### Paso 1.8 - Validación de calidad
 
@@ -587,7 +644,81 @@ from src.data.qc import validar_corpus
 validar_corpus(corpus)
 ```
 
+### OK REALIZADO - Paso 1.8
+
+**Se hizo:**
+
+- Se implementó `src/data/qc.py` con un módulo completo de quality control que incluye cuatro funciones:
+  - `validar_corpus(df)`: aserciones estrictas de integridad (IDs únicos, textos no nulos, etiquetas en {0,1}, tiene_modismo bool, proporción hate en [5%,60%]). Los textos con < 3 tokens emiten advertencia si son < 5% del corpus (no bloquean el pipeline).
+  - `detectar_duplicados(df)`: detecta duplicados exactos y duplicados normalizados (nivel 2: lowercase + sin puntuación/emojis).
+  - `generar_reporte_qc(df, version, corpus_path, output_dir)`: escribe automáticamente `data/reports_qc/qc_corpus_v{n}.md` con: tamaño, distribución por dataset, modismos globales y cruzada, longitudes en tokens/chars, duplicados, top-30 unigramas y bigramas por clase, y checklist de aserciones.
+  - `ejecutar_qc_completo()`: orquestadora que carga el corpus, llama a las tres funciones anteriores y produce el reporte.
+- Se ejecutó el QC completo sobre `data/processed/corpus_v1_enriquecido.parquet` con éxito.
+- El reporte `data/reports_qc/qc_corpus_v1.md` fue generado automáticamente.
+
+**Hallazgos del QC:**
+
+| Aserción | Resultado |
+| -------- | --------- |
+| IDs únicos | [OK] — todos los IDs son únicos |
+| Textos no nulos | [OK] — 0 nulos |
+| Textos ≥ 3 tokens | [ADVERTENCIA] — 141 textos con < 3 tokens (0.4%) — dentro del umbral aceptable |
+| Etiquetas ∈ {0,1} | [OK] |
+| tiene_modismo dtype==bool | [OK] |
+| Proporción hate ∈ [5%,60%] | [OK] — 22.8% |
+| Cobertura modismos ≥ 15% | [OK] — 53.2% |
+
+**Duplicados detectados:**
+
+| Nivel | Duplicados |
+| ----- | ---------- |
+| Exactos (texto idéntico) | 217 |
+| Normalizados (sin puntuación/emojis, lowercase) | 341 |
+
+> Nota: Los duplicados son textos con contenido repetido entre datasets; los IDs son siempre únicos porque se generan como `<dataset>_<índice>`. Se recomienda eliminar duplicados exactos antes del entrenamiento (Paso 1.9+).
+
+**Resultados de longitud de texto:**
+
+| Métrica | Tokens | Caracteres |
+| ------- | ------ | ---------- |
+| Mediana | 20 | 113 |
+| P95 | 50 | 283 |
+| Máximo | 556 | 3,270 |
+
+> P95 ≤ 128 tokens → `max_length=128` es suficiente para tokenización BERT.
+
+**Archivos generados:**
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `src/data/qc.py` | Módulo completo con `validar_corpus()`, `detectar_duplicados()`, `generar_reporte_qc()`, `ejecutar_qc_completo()` |
+| `data/reports_qc/qc_corpus_v1.md` | **Salida automática.** Reporte QC completo con todas las métricas y tablas. |
+
+**Cómo ejecutar:**
+
+```powershell
+# Ejecutar el paso completo (valida + genera reporte)
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\data\qc.py
+```
+
+**Cómo importar desde otro módulo o notebook:**
+
+```python
+from src.data.qc import validar_corpus, ejecutar_qc_completo
+import pandas as pd
+
+# Solo validar (lanza AssertionError si falla)
+corpus = pd.read_parquet("data/processed/corpus_v1_enriquecido.parquet")
+validar_corpus(corpus)
+
+# O ejecutar el QC completo (valida + reporte)
+corpus = ejecutar_qc_completo()
+```
+
+---
+
 ### Paso 1.9 - Particionar en train/val/test
+
 
 ```python
 from sklearn.model_selection import train_test_split
@@ -613,9 +744,98 @@ test.to_parquet("../data/processed/test.parquet", index=False)
 corpus.to_parquet("../data/processed/corpus_v1_enriquecido.parquet", index=False)
 ```
 
+---
+
+### OK REALIZADO - Paso 1.9
+
+**Se hizo:**
+
+- Se implementó `src/data/split.py` con la función pública `particionar_corpus()` que:
+  - Carga `data/processed/corpus_v1_enriquecido.parquet` (33,318 filas).
+  - Elimina duplicados en **dos niveles**: exactos (texto idéntico) y normalizados (lowercase + sin puntuación + colapso de espacios).
+  - Realiza el particionado **70 / 15 / 15** con estratificación por `etiqueta` y semilla fija `random_state=42`.
+  - Ejecuta un **data leakage check** que verifica solapamiento de textos entre train↔val, train↔test y val↔test.
+  - Guarda los tres Parquets en `data/processed/` con compresión Snappy y reporta el SHA-256 de cada archivo.
+- Se ejecutó el script y se verificó la ausencia de leakage.
+
+**Resultado de la ejecución:**
+
+| Métrica | Valor |
+| ------- | ----- |
+| Corpus original | 33,318 filas |
+| Duplicados exactos eliminados | 217 |
+| Duplicados normalizados eliminados | 114 |
+| Total eliminados | **331** |
+| Corpus limpio para partir | **32,987** filas |
+
+**Particiones generadas:**
+
+| Split | Filas | % del total | Hate (%) |
+| ----- | ----- | ----------- | -------- |
+| **train** | 23,090 | 70.0% | 22.8% |
+| **val** | 4,948 | 15.0% | 22.8% |
+| **test** | 4,949 | 15.0% | 22.8% |
+
+**Distribución de clases (corpus limpio):**
+
+| Clase | Filas | Porcentaje |
+| ----- | ----- | ---------- |
+| no_hate (0) | 25,460 | 77.2% |
+| hate (1) | 7,527 | 22.8% |
+
+**Data leakage check:**
+
+| Par | Textos solapados |
+| --- | ---------------- |
+| train ↔ val | **0** [OK] |
+| train ↔ test | **0** [OK] |
+| val ↔ test | **0** [OK] |
+
+**Archivos generados:**
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `src/data/split.py` | Módulo `particionar_corpus()` con deduplicación en 2 niveles, particionado estratificado y data leakage check. |
+| `data/processed/train.parquet` | 23,090 filas — split de entrenamiento |
+| `data/processed/val.parquet` | 4,948 filas — split de validación |
+| `data/processed/test.parquet` | 4,949 filas — split de prueba |
+
+**SHA-256 de los archivos generados:**
+
+| Archivo | SHA-256 (primeros 16 chars) |
+| ------- | --------------------------- |
+| `train.parquet` | `24150e7edac3bcbf…` |
+| `val.parquet` | `99445ea7397cdbe3…` |
+| `test.parquet` | `f07165adca005065…` |
+
+**Cómo ejecutar:**
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\data\split.py
+```
+
+**Cómo importar desde otro módulo o notebook:**
+
+```python
+from src.data.split import particionar_corpus
+
+# Generar los splits (los guarda automáticamente en data/processed/)
+train, val, test = particionar_corpus(verbose=True)
+
+# O solo leer los Parquets ya generados
+import pandas as pd
+train = pd.read_parquet("data/processed/train.parquet")
+val   = pd.read_parquet("data/processed/val.parquet")
+test  = pd.read_parquet("data/processed/test.parquet")
+```
+
+---
+
+
 ### Paso 1.10 - Crear MANIFEST.json
 
 **Archivo:** `data/processed/MANIFEST.json`
+
 
 ```json
 {
@@ -651,6 +871,42 @@ def calcular_sha(filepath):
 corpus_sha = calcular_sha("../data/processed/corpus_v1_enriquecido.parquet")
 print(f"SHA-256: {corpus_sha}")
 ```
+
+### OK REALIZADO - Paso 1.10
+
+**Se hizo:**
+
+- Se creó `scripts/crear_manifest.py`, script que calcula automáticamente los hashes SHA-256 de los cuatro archivos Parquet del corpus procesado, obtiene el commit git actual via `subprocess` y escribe `data/processed/MANIFEST.json`.
+- Se ejecutó el script y se generó `data/processed/MANIFEST.json` con todos los metadatos de versión del corpus.
+- El MANIFEST incluye: SHA-256 del corpus enriquecido y los tres splits, commit git, timestamp UTC, datasets de origen, versión del lexicón, conteos reales de filas/hate/no_hate, resumen de deduplicación, resultado del leakage check y referencias a los módulos del pipeline.
+
+**Resultado de la ejecución:**
+
+| Archivo | SHA-256 completo |
+| ------- | ---------------- |
+| `corpus_v1_enriquecido.parquet` | `4a76b4005244ce454a08dc2c1580807bc2876e911f236e2ad2bc779e799c9c3c` |
+| `train.parquet` | `24150e7edac3bcbf167c6183941997e936acdf1f14f425be95545b5ad7db7fc8` |
+| `val.parquet` | `99445ea7397cdbe36d6fa4dae31a7bb479523b05417157df1b4864a303853cfc` |
+| `test.parquet` | `f07165adca005065e9a9e65f6385a8670fe61edfe3d23ecca700278c0fbaa59b` |
+
+**Commit git registrado:** `0d37d0e14b3c011fd3233052fff89965f45b6eea`
+
+**Archivos generados:**
+
+| Archivo | Contenido |
+| ------- | --------- |
+| `scripts/crear_manifest.py` | Script que calcula SHA-256, obtiene el commit git y escribe el MANIFEST. |
+| `data/processed/MANIFEST.json` | Metadatos completos de versión del corpus (corpus + splits + pipeline). |
+
+**Cómo ejecutar:**
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe scripts\crear_manifest.py
+```
+
+> **Nota:** Ejecutar este script cada vez que se regeneren los Parquets para mantener el MANIFEST sincronizado con el estado real del corpus. El commit registrado es el HEAD del repositorio en el momento de ejecución.
+
+---
 
 ### Paso 1.11 - Generar reporte QC
 

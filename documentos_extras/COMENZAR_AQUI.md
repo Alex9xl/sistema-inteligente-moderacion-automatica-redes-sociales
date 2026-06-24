@@ -1,7 +1,7 @@
 # COMENZAR AQUÍ — Guía de Replicación
 
 > Este archivo te lleva de cero a replicar el estado actual del proyecto con comandos concretos.
-> Se actualiza con cada paso completado. Estado actual: **Paso 1.6 completado**.
+> Se actualiza con cada paso completado. Estado actual: **Paso 1.10 completado**.
 
 ---
 
@@ -156,14 +156,228 @@ tiene = lex.tiene_modismo("Ese pinche tipo no sabe nada")  # True
 
 ---
 
+### 1.7 — Enriquecer corpus con `tiene_modismo` ✅
+
+Aplica el lexicón LATAM sobre el corpus combinado para agregar las columnas `tiene_modismo` (bool) y `n_tokens_aprox` (int16). El resultado es el corpus listo para QC y particionado.
+
+```powershell
+.\venv\Scripts\python.exe src\data\enrich.py
+```
+
+**Resultado esperado:**
+
+```
+Con modismo  : 17,722  (53.19%)
+Sin modismo  : 15,596  (46.81%)
+Requisito >=15%: [OK]
+```
+
+**Salida:** `data/processed/corpus_v1_enriquecido.parquet` (33,318 filas, 10 columnas)
+
+**Cómo importar desde otros módulos:**
+
+```python
+from src.data.enrich import enriquecer_corpus
+
+corpus = enriquecer_corpus(verbose=True)
+
+# O solo leer el Parquet ya generado
+import pandas as pd
+corpus = pd.read_parquet("data/processed/corpus_v1_enriquecido.parquet")
+```
+
+---
+
+### 1.8 — Validación de calidad del corpus ✅
+
+Valida la integridad del corpus enriquecido y genera el reporte QC completo.
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\data\qc.py
+```
+
+**Resultado esperado:**
+
+```
+============================================================
+  PASO 1.8 - Validación de calidad del corpus
+============================================================
+Cargando corpus desde data\processed\corpus_v1_enriquecido.parquet...
+  33,318 filas, 10 columnas
+
+--- Validaciones de integridad ---
+  [ADVERTENCIA] 141 textos con < 3 tokens (0.4%) -- dentro del umbral aceptable.
+[OK] Corpus validado correctamente -- todas las aserciones pasaron.
+
+--- Detección de duplicados ---
+  Duplicados exactos      : 217
+  Duplicados normalizados : 341
+
+--- Generando reporte QC ---
+  Reporte QC guardado en: data\reports_qc\qc_corpus_v1.md
+
+============================================================
+Paso 1.8 completado exitosamente.
+============================================================
+```
+
+**Salidas generadas:**
+- `data/reports_qc/qc_corpus_v1.md` — Reporte QC completo con: tamaño, distribución por dataset, modismos cruzada, longitudes, duplicados, top-30 unigramas y bigramas por clase
+
+**Hallazgos del QC:**
+
+| Aserción | Resultado |
+|----------|-----------|
+| IDs únicos | [OK] — todos únicos |
+| Textos no nulos | [OK] — 0 nulos |
+| Textos ≥ 3 tokens | [ADVERTENCIA] — 141 casos (0.4%) — aceptable |
+| Etiquetas ∈ {0,1} | [OK] |
+| tiene_modismo dtype==bool | [OK] |
+| Proporción hate ∈ [5%,60%] | [OK] — 22.8% |
+| Cobertura modismos ≥ 15% | [OK] — 53.2% |
+
+> **Nota sobre duplicados:** 217 textos exactamente repetidos entre datasets. Los IDs son únicos (generados como `<dataset>_<índice>`). Se recomienda eliminar duplicados antes del entrenamiento en el Paso 1.9.
+
+**Cómo importar desde otros módulos:**
+
+```python
+from src.data.qc import validar_corpus, ejecutar_qc_completo
+import pandas as pd
+
+# Solo validar (lanza AssertionError si falla)
+corpus = pd.read_parquet("data/processed/corpus_v1_enriquecido.parquet")
+validar_corpus(corpus)
+
+# O ejecutar el QC completo (valida + genera reporte)
+corpus = ejecutar_qc_completo()
+```
+
+---
+
+### 1.9 — Particionado train/val/test ✅
+
+Elimina duplicados, parte el corpus en 70/15/15 con estratificación por etiqueta y verifica que no haya data leakage entre splits.
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\data\split.py
+```
+
+**Resultado esperado:**
+
+```
+============================================================
+  PASO 1.9 - Particionado train/val/test
+============================================================
+
+--- Eliminando duplicados (nivel 2) ---
+  Duplicados exactos eliminados    : 217
+  Duplicados normalizados eliminados: 114
+  Total eliminados                 : 331
+  Filas restantes                  : 32987
+
+--- Distribución de clases ---
+  no_hate (0): 25460  (77.2%)
+  hate (1): 7527  (22.8%)
+
+--- Particionado (70/15/15, seed=42) ---
+
+  Train : 23090 filas  (70.0% del total)  |  hate: 22.8%
+  Val   :  4948 filas  (15.0% del total)  |  hate: 22.8%
+  Test  :  4949 filas  (15.0% del total)  |  hate: 22.8%
+
+--- Verificación de data leakage ---
+  [OK] Sin leakage train↔val
+  [OK] Sin leakage train↔test
+  [OK] Sin leakage val↔test
+
+============================================================
+Paso 1.9 completado exitosamente.
+  Train : 23,090 filas -> data/processed/train.parquet
+  Val   : 4,948 filas -> data/processed/val.parquet
+  Test  : 4,949 filas -> data/processed/test.parquet
+============================================================
+```
+
+**Salidas generadas:**
+- `data/processed/train.parquet` — 23,090 filas (70%)
+- `data/processed/val.parquet` — 4,948 filas (15%)
+- `data/processed/test.parquet` — 4,949 filas (15%)
+
+**Detalles de deduplicación:**
+
+| Nivel | Duplicados eliminados |
+|-------|----------------------|
+| Exactos (texto idéntico) | 217 |
+| Normalizados (lowercase + sin puntuación) | 114 |
+| **Total** | **331** |
+
+**Data leakage check — todos limpios:** train↔val, train↔test, val↔test = **0 textos solapados**.
+
+**Cómo importar desde otros módulos:**
+
+```python
+from src.data.split import particionar_corpus
+
+# Generar los splits (los guarda automáticamente en data/processed/)
+train, val, test = particionar_corpus(verbose=True)
+
+# O solo leer los Parquets ya generados
+import pandas as pd
+train = pd.read_parquet("data/processed/train.parquet")
+val   = pd.read_parquet("data/processed/val.parquet")
+test  = pd.read_parquet("data/processed/test.parquet")
+```
+
+---
+
+### 1.10 — Crear MANIFEST.json ✅
+
+Genera `data/processed/MANIFEST.json` con los hashes SHA-256 de todos los Parquets del corpus y el commit git del momento de creación.
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe scripts\crear_manifest.py
+```
+
+**Resultado esperado:**
+
+```
+============================================================
+  PASO 1.10 - Crear MANIFEST.json
+============================================================
+
+Calculando SHA-256...
+  corpus_v1_enriquecido : 4a76b4005244ce454a08dc2c1580807b...
+  train                 : 24150e7edac3bcbf167c6183941997e9...
+  val                   : 99445ea7397cdbe36d6fa4dae31a7bb4...
+  test                  : f07165adca005065e9a9e65f6385a867...
+
+Commit git            : 0d37d0e14b3c...
+
+[OK] MANIFEST.json guardado en: ...\data\processed\MANIFEST.json
+
+============================================================
+Paso 1.10 completado exitosamente.
+============================================================
+```
+
+**Salida generada:**
+- `data/processed/MANIFEST.json` — metadatos de versión del corpus: SHA-256 de los 4 Parquets, commit git, timestamp UTC, datasets de origen, versión del lexicón, conteos reales y resumen del pipeline.
+
+| Archivo | SHA-256 |
+|---------|----------|
+| `corpus_v1_enriquecido.parquet` | `4a76b4005244ce454a08dc2c1580807bc2876e911f236e2ad2bc779e799c9c3c` |
+| `train.parquet` | `24150e7edac3bcbf167c6183941997e936acdf1f14f425be95545b5ad7db7fc8` |
+| `val.parquet` | `99445ea7397cdbe36d6fa4dae31a7bb479523b05417157df1b4864a303853cfc` |
+| `test.parquet` | `f07165adca005065e9a9e65f6385a8670fe61edfe3d23ecca700278c0fbaa59b` |
+
+> **Nota:** Volver a ejecutar el script cada vez que se regeneren los Parquets para mantener el MANIFEST sincronizado.
+
+---
+
 ## Próximos pasos (aún no implementados)
 
 | Paso | Descripción |
 |------|-------------|
-| **1.7** | Enriquecer corpus con columna `tiene_modismo` → `corpus_v1_enriquecido.parquet` |
-| **1.8** | Validación de calidad (`src/data/qc.py`) |
-| **1.9** | Particionar en train/val/test (70/15/15 estratificado) |
-| **1.10** | Crear `data/processed/MANIFEST.json` con hashes |
 | **1.11** | Reporte QC final |
 | **Fase 2** | Entrenamiento de BETO, mBERT y XLM-R (requiere GPU) |
 
