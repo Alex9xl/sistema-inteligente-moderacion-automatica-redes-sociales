@@ -534,4 +534,3 @@ resultado = exp.explain("Ese pinche tipo me cae muy mal")
 | [`INSTRUCCIONES_PROYECTO.md`](INSTRUCCIONES_PROYECTO.md) | Enunciado oficial y especificación técnica completa (22 secciones) |
 | [`PLAN_DESARROLLO.md`](PLAN_DESARROLLO.md) | Itinerario paso a paso con código y estado de cada paso |
 | [`../EXPERIMENTOS.md`](../EXPERIMENTOS.md) | Bitácora científica — registrar decisiones y resultados |
-| [`ESTADO_PROYECTO.md`](ESTADO_PROYECTO.md) | Resumen ejecutivo del estado actual |

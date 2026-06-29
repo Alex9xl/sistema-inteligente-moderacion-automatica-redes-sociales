@@ -1,4 +1,4 @@
-﻿# DOCUMENTO MAESTRO DE IMPLEMENTACIÓN
+# DOCUMENTO MAESTRO DE IMPLEMENTACIÓN
 
 ## Sistema Inteligente de Moderación Automática en Redes Sociales para la Protección del Bienestar Digital del Usuario
 
@@ -404,8 +404,7 @@ Tesis_Proyecto/
 ├── documentos_extras/
 │   ├── INSTRUCCIONES_PROYECTO.md     # enunciado y especificación técnica (este documento)
 │   ├── PLAN_DESARROLLO.md            # itinerario paso a paso
-│   ├── GUIA_REPRODUCCION.md            # guía para reproducir resultados
-│   └── ESTADO_PROYECTO.md              # resumen ejecutivo del avance
+│   └── GUIA_REPRODUCCION.md            # guía para reproducir resultados
 ├── LICENSE
 ├── .gitignore
 ├── .pre-commit-config.yaml
