@@ -4,7 +4,7 @@ Descripción de la arquitectura del sistema y sus componentes.
 
 ## Diagrama general
 
-[Ver `guia.md` sección 3.2 para diagrama ASCII completo]
+[Ver `documentos_extras/INSTRUCCIONES_PROYECTO.md` sección 3.2 para diagrama ASCII completo]
 
 ## Capas funcionales
 
@@ -16,4 +16,4 @@ Descripción de la arquitectura del sistema y sus componentes.
 
 ## Dependencias entre módulos
 
-Ver `guia.md` sección 3.5 para matriz completa de dependencias.
+Ver `documentos_extras/INSTRUCCIONES_PROYECTO.md` sección 3.5 para matriz completa de dependencias.

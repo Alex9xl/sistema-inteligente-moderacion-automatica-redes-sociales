@@ -31,7 +31,7 @@ CORPUS_PATH = ROOT / "data" / "processed" / "corpus_v1_enriquecido.parquet"
 REPORTS_DIR = ROOT / "data" / "reports_qc"
 
 # ---------------------------------------------------------------------------
-# 1. Validaciones estrictas (guia.md §6.4)
+# 1. Validaciones estrictas (INSTRUCCIONES_PROYECTO.md §6.4)
 # ---------------------------------------------------------------------------
 
 
@@ -106,7 +106,7 @@ def validar_corpus(df: pd.DataFrame) -> None:
 
 
 # ---------------------------------------------------------------------------
-# 2. Análisis de duplicados (guia.md §6.5)
+# 2. Análisis de duplicados (INSTRUCCIONES_PROYECTO.md §6.5)
 # ---------------------------------------------------------------------------
 
 _EMOJI_RE = re.compile(
@@ -249,7 +249,7 @@ def generar_reporte_qc(
     """
     Genera el reporte de calidad del corpus en formato Markdown.
 
-    Sigue la especificación de guia.md §6.4:
+    Sigue la especificación de INSTRUCCIONES_PROYECTO.md §6.4:
       - Tamaño total
       - Distribución de clases (global y por dataset)
       - Distribución de tiene_modismo (global y por clase)

@@ -4,7 +4,7 @@ Justificaciones para cada decisión arquitectónica y metodológica.
 
 ## Decisiones clave
 
-Ver `guia.md` sección 3.6 para tabla completa de decisiones vs alternativas.
+Ver `documentos_extras/INSTRUCCIONES_PROYECTO.md` sección 3.6 para tabla completa de decisiones vs alternativas.
 
 ### BETO cased vs uncased
 
@@ -26,4 +26,4 @@ Ver `guia.md` sección 3.6 para tabla completa de decisiones vs alternativas.
 
 ## Riesgos mitigados
 
-Ver `guia.md` sección 3.7 para matriz de riesgos arquitectónicos.
+Ver `documentos_extras/INSTRUCCIONES_PROYECTO.md` sección 3.7 para matriz de riesgos arquitectónicos.

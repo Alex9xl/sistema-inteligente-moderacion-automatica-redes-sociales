@@ -7,12 +7,12 @@
  *   1. Hacer "ping" al endpoint /health desde el popup y la página de opciones.
  *   2. Mantener listo el contrato y la cola de inferencia.
  *
- * Cuando el backend esté disponible (ver `src/api/main.py` y guia.md §14):
+ * Cuando el backend esté disponible (ver `src/api/main.py` y INSTRUCCIONES_PROYECTO.md §14):
  *   - apiPredict() y apiExplain() ya hablan el contrato correcto.
  *   - El service worker sólo tendrá que activar `apiHabilitada` y empezar
  *     a llamar a `enqueuePredict()` desde `procesarLoteContent()`.
  *
- * Endpoints (guia.md §14.4):
+ * Endpoints (INSTRUCCIONES_PROYECTO.md §14.4):
  *   POST /predict   { texto: string }                  -> { etiqueta, probabilidad, modelo, version }
  *   POST /explain   { texto: string }                  -> { ..., tokens, pesos }
  *   GET  /health                                       -> { status, model_loaded, model_version }
@@ -27,7 +27,7 @@
   const DEFAULT_TIMEOUT_MS = 4000;
 
   /* ============================================================
-   * Caché en memoria con TTL (ver guia.md §15.11)
+   * Caché en memoria con TTL (ver INSTRUCCIONES_PROYECTO.md §15.11)
    * Evita repreguntar el mismo fragmento al backend en una sesión.
    * ============================================================ */
 
@@ -129,7 +129,7 @@
   }
 
   /* ============================================================
-   * Cola con concurrencia limitada (guia.md §15.6 / §15.11)
+   * Cola con concurrencia limitada (INSTRUCCIONES_PROYECTO.md §15.6 / §15.11)
    * ============================================================ */
 
   const COLA_MAX = 3;

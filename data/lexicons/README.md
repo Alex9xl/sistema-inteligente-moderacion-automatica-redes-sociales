@@ -40,7 +40,7 @@ tiene = lexicon.tiene_modismo("Ese pinche wey es un ñero")  # True
 
 ## Importante
 
-Este lexicón es de **investigación** (sección 8 de `guia.md`). 
+Este lexicón es de **investigación** (sección 8 de `documentos_extras/INSTRUCCIONES_PROYECTO.md`). 
 
 Distinto del **lexicón personal del usuario** (que vive en la extensión Chrome, sección 15).
 

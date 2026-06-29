@@ -1,0 +1,11 @@
+metric,value
+f1_con_modismos,0.7346938775510204
+f1_sin_modismos,0.5054545454545455
+delta_f1_observed,0.22923933209647496
+delta_f1_bootstrap_mean,0.2300136759305607
+delta_f1_bootstrap_std,0.029003609641399114
+delta_f1_ci_lower,0.17379830605163374
+delta_f1_ci_upper,0.2888753242770198
+p_value_permutation,0.000999000999000999
+significant_alpha_005,True
+h3_supported,True

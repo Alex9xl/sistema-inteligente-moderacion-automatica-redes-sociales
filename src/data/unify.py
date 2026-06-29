@@ -6,7 +6,7 @@ concatena en un único DataFrame. La salida se guarda en:
 
     data/interim/corpus_combinado.parquet
 
-Referencia: guia.md §7.2 "Pipeline completo" y §6.3 "Convenciones de nombres".
+Referencia: INSTRUCCIONES_PROYECTO.md §7.2 "Pipeline completo" y §6.3 "Convenciones de nombres".
 
 Esquema canónico producido:
     id              string   — formato <dataset>_<n>, único

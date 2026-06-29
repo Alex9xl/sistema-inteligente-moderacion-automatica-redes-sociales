@@ -11,7 +11,7 @@
  * ──────────────────────────────────────────────────────────────────────
  * INTEGRACIÓN CON BETO (cuando el modelo ajustado esté disponible)
  * ──────────────────────────────────────────────────────────────────────
- *  1. Levantar backend FastAPI (ver guia.md §14):
+ *  1. Levantar backend FastAPI (ver INSTRUCCIONES_PROYECTO.md §14):
  *       uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
  *  2. Activar `apiHabilitada=true` desde la página de opciones.
  *  3. Implementar el handler `PREDICT_BATCH` (ver TODO BETO más abajo) que
@@ -21,7 +21,7 @@
  *     para tooltips con SHAP.
  *
  * El contrato HTTP (predict/explain/health) ya está implementado en
- * `api.js` y validado contra guia.md §14.4 / §15.9.
+ * `api.js` y validado contra INSTRUCCIONES_PROYECTO.md §14.4 / §15.9.
  * ──────────────────────────────────────────────────────────────────────
  */
 
@@ -92,7 +92,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     /* ─────────────────────────────────────────────────────────────
      * TODO BETO  ·  Cuando apiHabilitada=true y el backend esté listo,
      * el content script enviará lotes de fragmentos a inferir aquí.
-     * Ver guia.md §15.4 / §15.6.
+     * Ver INSTRUCCIONES_PROYECTO.md §15.4 / §15.6.
      * ───────────────────────────────────────────────────────────── */
     case "PREDICT_BATCH":
       handlePredictBatch(msg, sender);

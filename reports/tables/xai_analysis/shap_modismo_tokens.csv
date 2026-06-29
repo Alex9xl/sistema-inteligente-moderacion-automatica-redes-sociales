@@ -1,0 +1,21 @@
+error_type,tiene_modismo,top5_tokens,tokens_relevantes,n_relevantes
+falso_positivo,True,"['loca ', 'agresiva', ', ', 'me ', 'una ']","['loca ', 'agresiva', 'me ', 'una ']",4
+falso_positivo,True,"['fac', 'has ', 'Venga', 'USE', 'VE']","['fac', 'has ', 'Venga', 'USE']",4
+falso_positivo,False,"['imbéciles', 'fas', ', ', 'se ', 'ejemplo😂😂😂😂😂😂😂']","['imbéciles', 'fas', 'se ', 'ejemplo😂😂😂😂😂😂😂']",4
+falso_positivo,False,"['zan', 'ganos', 'tropa ', 'lados', 'gol']","['zan', 'ganos', 'tropa ', 'lados', 'gol']",5
+falso_positivo,True,"['puto ', 'loca ', 'co', 'está ', 'madre ']","['puto ', 'loca ', 'está ', 'madre ']",4
+falso_positivo,False,"['poli', 'pagados ', 'Estado ', 'extranjeros ', 'pais']","['poli', 'pagados ', 'Estado ', 'extranjeros ', 'pais']",5
+falso_positivo,False,"['guer', 'mon', 'detes', '. ', 'ciclismo ']","['guer', 'mon', 'detes', 'ciclismo ']",4
+falso_positivo,False,"['musulmana', 'y ', 'enseñan ', 'apuestas ', 'cara']","['musulmana', 'enseñan ', 'apuestas ', 'cara']",4
+falso_positivo,True,"['Bo', 'vuestros ', 'fac', 'has ', 'os']","['vuestros ', 'fac', 'has ']",3
+falso_positivo,True,"['sub', 'r', 'no', 'USE', 'mal ']","['sub', 'USE', 'mal ']",3
+falso_negativo,True,"['PU', 'LA ', 'TA ', 'MI', 'COMUN']","['LA ', 'TA ', 'COMUN']",3
+falso_negativo,True,"['guar', 'USE', 'baño ', 'rilla ', 'unos ']","['guar', 'USE', 'baño ', 'rilla ', 'unos ']",5
+falso_negativo,False,"['Azul ', 'rosa', ', ', 'falso ', 'IN']","['Azul ', 'rosa', 'falso ']",3
+falso_negativo,True,"['puta', 'soy ', 'AT', 'Le ', 'sabe ']","['puta', 'soy ', 'Le ', 'sabe ']",4
+falso_negativo,True,"['.', 'fac', 'catal', 'ha ', 'Catalunya ']","['fac', 'catal', 'ha ', 'Catalunya ']",4
+falso_negativo,False,"['BA', 'OS ', 'N', 'TIN', 'USE']","['OS ', 'TIN', 'USE']",3
+falso_negativo,False,"['musulmanes ', 'única ', 'español', 'es ', 'representación ']","['musulmanes ', 'única ', 'español', 'es ', 'representación ']",5
+falso_negativo,True,"['loco ', 'se ', 'paso', 'y ', 'lastim']","['loco ', 'se ', 'paso', 'lastim']",4
+falso_negativo,True,"['ganamos ', 'lad', 'mas', 'un ', 'España ']","['ganamos ', 'lad', 'mas', 'un ', 'España ']",5
+falso_negativo,True,"[', ', 'esco', 'rias ', 'L', 'istas ']","['esco', 'rias ', 'istas ']",3

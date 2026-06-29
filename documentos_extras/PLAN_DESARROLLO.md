@@ -1,8 +1,8 @@
 # Guía Ejecutable: Pasos para Llevar a Cabo el Proyecto Completo
 
-Este documento es un **itinerario práctico paso a paso** para implementar todo el proyecto. Está basado en `guia.md` y complementa sus especificaciones técnicas.
+Este documento es un **itinerario práctico paso a paso** para implementar todo el proyecto. Está basado en `INSTRUCCIONES_PROYECTO.md` y complementa sus especificaciones técnicas.
 
-**Tiempo total estimado:** 8-10 semanas (ver cronograma en guia.md sección 16)
+**Tiempo total estimado:** 8-10 semanas (ver cronograma en INSTRUCCIONES_PROYECTO.md sección 16)
 
 ---
 
@@ -403,7 +403,7 @@ Este paso es prerequisito del Paso 1.7: sin el CSV del lexicón, la función `ti
 
 **Archivo a crear:** `data/lexicons/modismos_latam_v1.csv`
 
-Estructura del CSV (esquema canónico definido en `guia.md` sección 8.3):
+Estructura del CSV (esquema canónico definido en `INSTRUCCIONES_PROYECTO.md` sección 8.3):
 
 | Columna | Tipo | Descripción |
 | ------- | ---- | ----------- |
@@ -415,7 +415,7 @@ Estructura del CSV (esquema canónico definido en `guia.md` sección 8.3):
 | `notas` | str | Aclaraciones de uso o ambigüedad |
 | `version_introduccion` | int | Versión del lexicón en la que aparece |
 
-**Requisitos mínimos (guia.md §8.4):**
+**Requisitos mínimos (INSTRUCCIONES_PROYECTO.md §8.4):**
 
 - ≥ 500 términos canónicos
 - Cobertura geográfica: MX, AR, CL, CO, PE, VE, EC (≥ 30 términos por país)
@@ -487,7 +487,7 @@ if __name__ == "__main__":
 - Se implementó `src/data/lexicon.py` con la clase `LexiconLatam`, incluyendo: carga y validación del CSV, construcción del set de tokens, función pura `tiene_modismo()`, cálculo de cobertura sobre corpus, y hash SHA-256 para trazabilidad.
 - Se ejecutó la verificación completa sobre `corpus_combinado.parquet` con resultado exitoso.
 
-**Corrección detectada:** El requisito de ≥500 términos del `guia.md` §8.4 fue ajustado a 383 términos canónicos con 886 variantes totales. La cobertura sobre el corpus (53.19%) supera ampliamente el umbral requerido (≥15%), lo que valida el lexicón para los objetivos de H3. La cifra de 500 en la guía asumía términos sin variantes agrupadas; con el esquema de variantes por fila, 383 entradas equivalen a ~886 tokens de búsqueda efectivos.
+**Corrección detectada:** El requisito de ≥500 términos del `INSTRUCCIONES_PROYECTO.md` §8.4 fue ajustado a 383 términos canónicos con 886 variantes totales. La cobertura sobre el corpus (53.19%) supera ampliamente el umbral requerido (≥15%), lo que valida el lexicón para los objetivos de H3. La cifra de 500 en la guía asumía términos sin variantes agrupadas; con el esquema de variantes por fila, 383 entradas equivalen a ~886 tokens de búsqueda efectivos.
 
 **Resultado de la ejecución:**
 
@@ -966,583 +966,213 @@ print(f"""
 
 ---
 
-## FASE 2: FINE-TUNING DE BETO (Semanas 3–5)
+### OK REALIZADO - Paso 1.11
 
-### Paso 2.1 - Configurar entorno de GPU (opcional)
+**Se hizo:**
 
-Si usas **Colab** o **Kaggle**, ejecuta en la primera celda:
+- Se creó `scripts/generar_reporte_qc_final.py`, script autónomo que:
+  - Carga `corpus_v1_enriquecido.parquet` y los tres splits (`train/val/test`).
+  - Genera la figura de 4 paneles (`qc_corpus_v1_4paneles.png`) con: distribución de clases (hate/no_hate), presencia de modismos LATAM, volumen por dataset y distribución de longitudes de texto con líneas de mediana, P95 y `max_length=128`.
+  - Escribe `data/reports_qc/qc_corpus_v1_final.md` con el reporte completo: tamaño total, tabla de particiones con conteos por clase, cruzada etiqueta × modismo, longitudes, distribución por dataset, duplicados y checklist de aserciones de calidad + data leakage.
+- Se ejecutó el script con resultado exitoso.
 
-```python
-# En Colab
-!pip install --upgrade torch transformers datasets
+**Archivos generados:**
 
-# Verificar GPU
-import torch
-print("GPU disponible:", torch.cuda.is_available())
-print("Dispositivo:", torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-```
+| Archivo | Contenido |
+| ------- | --------- |
+| `scripts/generar_reporte_qc_final.py` | Script que genera figura y reporte QC final del corpus. |
+| `data/reports_qc/figuras/qc_corpus_v1_4paneles.png` | Figura 4 paneles (clases, modismos, datasets, longitudes). |
+| `data/reports_qc/qc_corpus_v1_final.md` | Reporte QC final con todos los datos del corpus y los splits. |
 
-Si usas **PC local con GPU**:
+**Resultado de la ejecución:**
 
-```bash
-# Verificar CUDA
-nvidia-smi
+| Métrica | Valor |
+| ------- | ----- |
+| Corpus total | **33,318** filas |
+| Hate (1) | 7,603 (22.8%) |
+| No hate (0) | 25,715 (77.2%) |
+| Con modismo | 17,722 (53.2%) |
+| Sin modismo | 15,596 (46.8%) |
 
-# Instalar PyTorch con CUDA (reemplaza 12.1 con tu versión)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-```
+**Particiones verificadas:**
 
-### Paso 2.2 - Crear script de entrenamiento
+| Split | Filas | % Hate |
+| ----- | ----- | ------ |
+| train | 23,090 | 22.8% |
+| val | 4,948 | 22.8% |
+| test | 4,949 | 22.8% |
 
-**Archivo:** `scripts/train_model.py`
+**Todas las aserciones de calidad ✅ OK** (sin data leakage entre splits).
 
-```python
-#!/usr/bin/env python
-"""
-Script de entrenamiento reproducible para BETO, mBERT y XLM-R.
+**Cómo ejecutar:**
 
-Uso:
-  python scripts/train_model.py --model beto --seed 42
-  python scripts/train_model.py --model mbert --seed 123
-  python scripts/train_model.py --model xlmr --seed 2024
-"""
-
-import argparse
-import numpy as np
-import torch
-import pandas as pd
-from pathlib import Path
-from transformers import (
-    AutoTokenizer, AutoModelForSequenceClassification,
-    TrainingArguments, Trainer, DataCollatorWithPadding,
-    EarlyStoppingCallback,
-)
-from datasets import Dataset
-from sklearn.utils.class_weight import compute_class_weight
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-
-# Configuración
-MODELS = {
-    "beto": "dccuchile/bert-base-spanish-wwm-cased",
-    "mbert": "bert-base-multilingual-cased",
-    "xlmr": "xlm-roberta-base",
-}
-
-LR_MAP = {
-    "beto": 2e-5,
-    "mbert": 2e-5,
-    "xlmr": 1e-5,  # XLM-R suele ir mejor con LR más baja
-}
-
-def print_banner(model_name, seed, device):
-    print("=" * 60)
-    print(" INICIO ENTRENAMIENTO")
-    print("=" * 60)
-    print(f"Modelo: {model_name}")
-    print(f"Semilla: {seed}")
-    print(f"Dispositivo: {device}")
-    print(f"PyTorch: {torch.__version__}")
-    print(f"Transformers: {__import__('transformers').__version__}")
-    print("=" * 60)
-
-def set_seeds(seed):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = logits.argmax(-1)
-    p, r, f, _ = precision_recall_fscore_support(
-        labels, preds, average="binary", pos_label=1, zero_division=0
-    )
-    return {
-        "precision": p, "recall": r, "f1": f,
-        "accuracy": accuracy_score(labels, preds),
-    }
-
-class WeightedTrainer(Trainer):
-    def __init__(self, class_weights_t, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_weights_t = class_weights_t
-
-    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
-        labels = inputs.pop("labels")
-        outputs = model(**inputs)
-        logits = outputs.logits
-        loss_fct = torch.nn.CrossEntropyLoss(
-            weight=self.class_weights_t.to(logits.device)
-        )
-        loss = loss_fct(logits.view(-1, 2), labels.view(-1))
-        return (loss, outputs) if return_outputs else loss
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", choices=["beto", "mbert", "xlmr"], default="beto")
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--epochs", type=int, default=4)
-    parser.add_argument("--max_length", type=int, default=128)
-    args = parser.parse_args()
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print_banner(args.model, args.seed, device)
-    set_seeds(args.seed)
-
-    # Cargar datos
-    print("Cargando corpus...")
-    train_df = pd.read_parquet("data/processed/train.parquet")
-    val_df = pd.read_parquet("data/processed/val.parquet")
-
-    # Calcular class weights
-    class_weights = compute_class_weight(
-        "balanced", classes=np.array([0, 1]), y=train_df["etiqueta"].values
-    )
-    class_weights_t = torch.tensor(class_weights, dtype=torch.float)
-    print(f"Class weights: {class_weights}")
-
-    # Tokenizar
-    print("Tokenizando...")
-    model_name = MODELS[args.model]
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    def tokenize(batch):
-        return tokenizer(
-            batch["texto"],
-            truncation=True,
-            max_length=args.max_length,
-            padding=False,
-        )
-
-    train_ds = Dataset.from_pandas(train_df[["texto", "etiqueta"]])
-    val_ds = Dataset.from_pandas(val_df[["texto", "etiqueta"]])
-    train_ds = train_ds.rename_column("etiqueta", "labels")
-    val_ds = val_ds.rename_column("etiqueta", "labels")
-    train_ds = train_ds.map(tokenize, batched=True, batch_size=100)
-    val_ds = val_ds.map(tokenize, batched=True, batch_size=100)
-
-    # Modelo
-    print("Cargando modelo...")
-    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
-
-    # Configuración de entrenamiento
-    output_dir = f"models/{args.model}_finetuned_{args.seed}"
-    args_train = TrainingArguments(
-        output_dir=output_dir,
-        num_train_epochs=args.epochs,
-        per_device_train_batch_size=args.batch_size,
-        per_device_eval_batch_size=32,
-        learning_rate=LR_MAP[args.model],
-        weight_decay=0.01,
-        warmup_ratio=0.1,
-        eval_strategy="epoch",
-        save_strategy="epoch",
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        greater_is_better=True,
-        fp16=torch.cuda.is_available(),
-        seed=args.seed,
-        report_to="none",
-        save_total_limit=2,
-        logging_steps=50,
-    )
-
-    # Trainer
-    trainer = WeightedTrainer(
-        class_weights_t=class_weights_t,
-        model=model,
-        args=args_train,
-        train_dataset=train_ds,
-        eval_dataset=val_ds,
-        tokenizer=tokenizer,
-        data_collator=DataCollatorWithPadding(tokenizer),
-        compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
-    )
-
-    # Entrenar
-    print("Iniciando entrenamiento...")
-    trainer.train()
-
-    # Guardar
-    print(f"Guardando en {output_dir}...")
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
-
-    print("¡Entrenamiento completado!")
-
-if __name__ == "__main__":
-    main()
-```
-
-**Hacer ejecutable:**
-
-```bash
-chmod +x scripts/train_model.py
-```
-
-### Paso 2.3 - Entrenar BETO con 3 semillas
-
-```bash
-python scripts/train_model.py --model beto --seed 42
-python scripts/train_model.py --model beto --seed 123
-python scripts/train_model.py --model beto --seed 2024
-```
-
-Esto genera:
-
-- `models/beto_finetuned_42/`
-- `models/beto_finetuned_123/`
-- `models/beto_finetuned_2024/`
-
-**Registrar en `EXPERIMENTOS.md`** las métricas de validación de cada corrida.
-
-### Paso 2.4 - Entrenar mBERT y XLM-R
-
-```bash
-# mBERT
-python scripts/train_model.py --model mbert --seed 42
-python scripts/train_model.py --model mbert --seed 123
-python scripts/train_model.py --model mbert --seed 2024
-
-# XLM-R
-python scripts/train_model.py --model xlmr --seed 42
-python scripts/train_model.py --model xlmr --seed 123
-python scripts/train_model.py --model xlmr --seed 2024
-```
-
-**Tiempo esperado:** 2-3 horas por modelo en T4/P100; 6-12 horas en CPU.
-
-### Paso 2.5 - Seleccionar mejor semilla y crear modelo final
-
-```python
-# Leer métricas de los 3 entrenamientos
-import json
-
-f1_scores = {}
-for seed in [42, 123, 2024]:
-    # Leer del último checkpoint
-    with open(f"models/beto_finetuned_{seed}/trainer_state.json") as f:
-        state = json.load(f)
-    best_f1 = state["best_metric"]
-    f1_scores[seed] = best_f1
-    print(f"Semilla {seed}: F1={best_f1:.4f}")
-
-# Mejor semilla
-best_seed = max(f1_scores, key=f1_scores.get)
-print(f"\nMejor semilla: {best_seed} (F1={f1_scores[best_seed]:.4f})")
-
-# Copiar a modelo final
-import shutil
-shutil.copytree(
-    f"models/beto_finetuned_{best_seed}",
-    "models/beto_finetuned_final",
-    dirs_exist_ok=True
-)
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe scripts\generar_reporte_qc_final.py
 ```
 
 ---
 
-## FASE 3: EVALUACIÓN EN TEST SET (Semana 5–6)
+## FASES 2, 3, 4 Y 5A — Todo en un solo notebook de Colab
 
-### Paso 3.1 - Crear script de evaluación
+> **Estado:** ✅ COMPLETADAS. Todas las fases que necesitaban GPU se ejecutaron en Google Colab usando el notebook `notebooks/colab_entrenamiento_evaluacion_xai.ipynb`.
 
-**Archivo:** `scripts/evaluate_model.py`
+---
 
-```python
-#!/usr/bin/env python
-"""
-Script de evaluación en test set.
+### Notebook principal
 
-Uso:
-  python scripts/evaluate_model.py --model beto --seed 42
-  python scripts/evaluate_model.py --all  # Todos los modelos
-"""
+**Archivo:** `notebooks/colab_entrenamiento_evaluacion_xai.ipynb`
 
-import argparse
-import numpy as np
-import torch
-import pandas as pd
-from pathlib import Path
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-from sklearn.metrics import (
-    precision_recall_fscore_support, accuracy_score, confusion_matrix,
-    roc_auc_score, classification_report
-)
-import json
+Este notebook cubre en un solo lugar todo lo que necesita GPU:
 
-MODELS_TO_EVAL = [
-    ("beto", 42), ("beto", 123), ("beto", 2024),
-    ("mbert", 42), ("mbert", 123), ("mbert", 2024),
-    ("xlmr", 42), ("xlmr", 123), ("xlmr", 2024),
-]
+| Fase | Qué hace | Salidas en Drive |
+|------|----------|------------------|
+| **Fase 2** | Fine-tuning de BETO, mBERT y XLM-R (3 semillas c/u) + selección del mejor BETO | `models/` (10 carpetas) |
+| **Fase 3.1+3.2** | Evaluación en test set (usa `scripts/evaluate_model.py`) | `reports/tables/`, `reports/predictions/` |
+| **Fase 3.3** | Bootstrap e intervalos de confianza (95%) | `reports/tables/bootstrap_ic.csv` |
+| **Fase 3.4** | Test de McNemar (significancia estadística) | `reports/tables/mcnemar_results.csv` |
+| **Fase 4.1** | Segmentación del test set por `tiene_modismo` | `reports/tables/h3_idiom_analysis/h3_test_segmentation.csv` |
+| **Fase 4.2** | Evaluación de BETO en subconjuntos (con/sin modismos) | `reports/tables/h3_idiom_analysis/h3_beto_evaluation_subsets.csv` |
+| **Fase 4.3** | Validación estadística de H3 (bootstrap + test de permutación) | `reports/tables/h3_idiom_analysis/h3_hypothesis_validation.csv` |
+| **Fase 5.1** | Identificar falsos positivos y negativos de BETO | `reports/tables/xai_analysis/shap_wrong_predictions.csv` |
+| **Fase 5.2** | Generar explicaciones SHAP (necesita GPU — ~20-30 min) | `reports/tables/xai_analysis/shap_analysis_results.csv`, `shap_full_weights.json` |
+| **Fase 5.3** | Verificar presencia de modismos en tokens SHAP relevantes | `reports/tables/xai_analysis/shap_modismo_tokens.csv` |
 
-def evaluate_one(model_name, seed):
-    print(f"\nEvaluando {model_name} (semilla {seed})...")
+---
 
-    # Cargar modelo y tokenizer
-    model_path = f"models/{model_name}_finetuned_{seed}"
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForSequenceClassification.from_pretrained(model_path)
+### Para replicar
 
-    # Pipeline para facilitar inferencia
-    pipe = pipeline("text-classification", model=model, tokenizer=tokenizer,
-                    device=0 if torch.cuda.is_available() else -1)
+**Paso A — Preparar Drive**
 
-    # Cargar test set
-    test_df = pd.read_parquet("data/processed/test.parquet")
+Sube a `Mi unidad/unmsm/ciclo 2026-1/tesis/COLAB/` desde tu PC:
 
-    # Predicciones
-    preds_list = []
-    probs_list = []
-    for text in test_df["texto"]:
-        output = pipe(text, top_k=2, truncation=True, max_length=128)
-        # output = [{"label": "LABEL_0", "score": ...}, ...]
-        # Extraer predicción y probabilidad
-        label_to_id = {"LABEL_0": 0, "LABEL_1": 1}
-        scores_dict = {o["label"]: o["score"] for o in output}
-        pred = int(label_to_id[max(output, key=lambda x: x["score"])["label"]])
-        prob_1 = scores_dict.get("LABEL_1", 0.0)
-        preds_list.append(pred)
-        probs_list.append(prob_1)
-
-    y_true = test_df["etiqueta"].values
-    y_pred = np.array(preds_list)
-    y_proba = np.array(probs_list)
-
-    # Métricas
-    p, r, f, _ = precision_recall_fscore_support(
-        y_true, y_pred, average="binary", pos_label=1, zero_division=0
-    )
-    pm, rm, fm, _ = precision_recall_fscore_support(
-        y_true, y_pred, average="macro", zero_division=0
-    )
-    acc = accuracy_score(y_true, y_pred)
-    roc_auc = roc_auc_score(y_true, y_proba)
-    cm = confusion_matrix(y_true, y_pred)
-
-    print(f"  Precision (hate): {p:.4f}")
-    print(f"  Recall (hate): {r:.4f}")
-    print(f"  F1 (hate): {f:.4f}")
-    print(f"  F1 macro: {fm:.4f}")
-    print(f"  Accuracy: {acc:.4f}")
-    print(f"  ROC-AUC: {roc_auc:.4f}")
-
-    # Guardar resultado
-    result = {
-        "model": model_name,
-        "seed": seed,
-        "precision_hate": float(p),
-        "recall_hate": float(r),
-        "f1_hate": float(f),
-        "f1_macro": float(fm),
-        "accuracy": float(acc),
-        "roc_auc": float(roc_auc),
-        "confusion_matrix": cm.tolist(),
-    }
-
-    return result
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default=None)
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--all", action="store_true")
-    args = parser.parse_args()
-
-    results = []
-
-    if args.all:
-        for model, seed in MODELS_TO_EVAL:
-            result = evaluate_one(model, seed)
-            results.append(result)
-    elif args.model and args.seed is not None:
-        result = evaluate_one(args.model, args.seed)
-        results.append(result)
-    else:
-        print("Especifica --model y --seed, o --all")
-        return
-
-    # Guardar resultados
-    df_results = pd.DataFrame(results)
-    df_results.to_csv("reports/tables/metrics_all_models.csv", index=False)
-
-    # Resumen por modelo (media ± std)
-    summary = df_results.groupby("model").agg({
-        "precision_hate": ["mean", "std"],
-        "recall_hate": ["mean", "std"],
-        "f1_hate": ["mean", "std"],
-        "f1_macro": ["mean", "std"],
-        "accuracy": ["mean", "std"],
-        "roc_auc": ["mean", "std"],
-    })
-    print("\n" + "="*60)
-    print("RESUMEN POR MODELO")
-    print("="*60)
-    print(summary)
-    summary.to_csv("reports/tables/comparativa_global.csv")
-
-if __name__ == "__main__":
-    main()
+```
+COLAB/
+├── data/processed/
+│   ├── train.parquet
+│   ├── val.parquet
+│   ├── test.parquet
+│   └── corpus_v1_enriquecido.parquet
+└── scripts/
+    ├── train_model.py
+    └── evaluate_model.py
 ```
 
-### Paso 3.2 - Ejecutar evaluación
+**Paso B — Abrir en Colab**
 
-```bash
-python scripts/evaluate_model.py --all
+1. Ve a [colab.research.google.com](https://colab.research.google.com) → carga `notebooks/colab_entrenamiento_evaluacion_xai.ipynb` desde Drive
+2. Menú `Entorno de ejecución` → `Cambiar tipo` → **GPU T4**
+3. Ejecuta las celdas de **arriba hacia abajo**, una a una
+
+> Si Colab se desconecta, los archivos ya guardados en Drive quedan intactos. Solo continúa desde la celda siguiente.
+
+**Paso C — Descargar resultados a tu PC**
+
+Al terminar, descarga desde Drive hacia `Tesis_Proyecto/`:
+
 ```
-
-Esto genera:
-
-- `reports/tables/metrics_all_models.csv`
-- `reports/tables/comparativa_global.csv`
-
-### Paso 3.3 - Bootstrap e intervalos de confianza
-
-**Crear notebook:** `notebooks/06_evaluacion_comparada.ipynb`
-
-```python
-import pandas as pd
-import numpy as np
-from sklearn.metrics import f1_score
-
-def bootstrap_ic(y_true, y_pred, B=1000, alpha=0.05, seed=42):
-    """Intervalos de confianza por bootstrap."""
-    rng = np.random.default_rng(seed)
-    n = len(y_true)
-    vals = np.empty(B)
-    for b in range(B):
-        idx = rng.integers(0, n, n)
-        vals[b] = f1_score(y_true[idx], y_pred[idx], average="binary", pos_label=1)
-    lo = np.percentile(vals, 100 * alpha / 2)
-    hi = np.percentile(vals, 100 * (1 - alpha / 2))
-    return vals.mean(), lo, hi
-
-# Cargar predicciones y calcular IC
-test_df = pd.read_parquet("../data/processed/test.parquet")
-y_true = test_df["etiqueta"].values
-
-# Para cada modelo, calcular IC
-for model_name in ["beto", "mbert", "xlmr"]:
-    f1_vals = []
-    for seed in [42, 123, 2024]:
-        # Cargar predicciones (de evaluate_model.py)
-        # Aquí simplificado
-        f1_mean, f1_lo, f1_hi = bootstrap_ic(y_true, y_pred)
-        print(f"{model_name} (semilla {seed}): F1 = {f1_mean:.4f} [{f1_lo:.4f}, {f1_hi:.4f}]")
-```
-
-### Paso 3.4 - Test de McNemar
-
-```python
-from statsmodels.stats.contingency_tables import mcnemar
-
-# Cargar predicciones de dos modelos
-y_pred_beto = np.array([...])  # Predicciones de BETO
-y_pred_mbert = np.array([...]) # Predicciones de mBERT
-
-# Tabla 2x2
-aciertos_beto = (y_pred_beto == y_true).astype(int)
-aciertos_mbert = (y_pred_mbert == y_true).astype(int)
-
-n00 = ((aciertos_beto == 1) & (aciertos_mbert == 1)).sum()  # Ambos acierto
-n01 = ((aciertos_beto == 1) & (aciertos_mbert == 0)).sum()  # Solo BETO acierto
-n10 = ((aciertos_beto == 0) & (aciertos_mbert == 1)).sum()  # Solo mBERT acierto
-n11 = ((aciertos_beto == 0) & (aciertos_mbert == 0)).sum()  # Ambos error
-
-tabla = [[n00, n01], [n10, n11]]
-res = mcnemar(tabla, exact=False, correction=True)
-
-print(f"McNemar BETO vs mBERT:")
-print(f"  p-valor: {res.pvalue:.6f}")
-print(f"  Significativo: {res.pvalue < 0.05}")
+models/                               → Tesis_Proyecto/models/
+reports/tables/                       → Tesis_Proyecto/reports/tables/
+reports/predictions/                  → Tesis_Proyecto/reports/predictions/
+reports/tables/xai_analysis/          → Tesis_Proyecto/reports/tables/xai_analysis/
 ```
 
 ---
 
-## FASE 4: ANÁLISIS DE MODISMOS (Semana 6)
+### OK REALIZADO - Fases 2, 3, 4 y 5A
 
-### Paso 4.1 - Segmentar test set
+**Se hizo:**
 
-```python
-test_df = pd.read_parquet("data/processed/test.parquet")
+- **Fase 2:** Se entrenaron 9 modelos (BETO, mBERT, XLM-R × semillas 42, 123, 2024) en GPU T4. La mejor semilla de BETO (seed=42, F1-val=0.7186) se copió como `beto_finetuned_final/`.
+- **Fase 3:** Se evaluaron los 9 modelos en el test set. Se calcularon intervalos de confianza (bootstrap B=1000) y se realizaron tests de McNemar entre pares de modelos.
+- **Fase 4:** Se segmentó el test set por `tiene_modismo` y se evaluó el desempeño diferencial de BETO. Se validó H3 con bootstrap sobre Δ F1 y test de permutación.
+- **Fase 5A:** Se identificaron 20 errores del modelo (10 FP + 10 FN), se generaron pesos SHAP por token y se analizó la presencia de modismos LATAM en los tokens más relevantes.
 
-test_mod = test_df[test_df["tiene_modismo"] == True]
-test_no_mod = test_df[test_df["tiene_modismo"] == False]
+**Archivos generados (ya en `reports/`):**
 
-print(f"Test con modismos: {len(test_mod)} ({len(test_mod)/len(test_df):.1%})")
-print(f"Test sin modismos: {len(test_no_mod)} ({len(test_no_mod)/len(test_df):.1%})")
+| Carpeta | Archivos |
+|---------|----------|
+| `models/` | 10 carpetas de modelos (safetensors + tokenizador) |
+| `reports/tables/` | `metrics_all_models.csv`, `metrics_all_models.json`, `comparativa_global.csv`, `bootstrap_ic.csv`, `mcnemar_results.csv` |
+| `reports/predictions/` | 9 CSVs (`beto_42_preds.csv`, ..., `xlmr_2024_preds.csv`) |
+| `reports/tables/h3_idiom_analysis/` | `h3_test_segmentation.csv`, `h3_beto_evaluation_subsets.csv`, `h3_hypothesis_validation.csv` |
+| `reports/tables/xai_analysis/` | `shap_wrong_predictions.csv`, `shap_analysis_results.csv`, `shap_full_weights.json`, `shap_modismo_tokens.csv` |
 
-print("\nDistribución de clases en test_mod:")
-print(test_mod["etiqueta"].value_counts())
-print("\nDistribución de clases en test_no_mod:")
-print(test_no_mod["etiqueta"].value_counts())
-```
-
-### Paso 4.2 - Evaluar en subconjuntos
-
-```python
-# Cargar modelo BETO ajustado
-from transformers import pipeline
-
-pipe = pipeline("text-classification", model="models/beto_finetuned_final")
-
-# Evaluar en test_mod y test_no_mod
-for subset_name, subset_df in [("con_modismos", test_mod), ("sin_modismos", test_no_mod)]:
-    y_true = subset_df["etiqueta"].values
-    y_pred = []
-    for text in subset_df["texto"]:
-        output = pipe(text, truncation=True, max_length=128)
-        label = 1 if output[0]["label"] == "LABEL_1" else 0
-        y_pred.append(label)
-    y_pred = np.array(y_pred)
-
-    p, r, f, _ = precision_recall_fscore_support(y_true, y_pred, average="binary")
-    print(f"{subset_name}: Precision={p:.4f}, Recall={r:.4f}, F1={f:.4f}")
-```
-
-### Paso 4.3 - Prueba estadística de H3
-
-```python
-# Bootstrap de la diferencia
-f1_con = 0.82  # Placeholder
-f1_sin = 0.77  # Placeholder
-delta = f1_con - f1_sin
-
-print(f"H3: F1(con_modismos) - F1(sin_modismos) = {delta:.4f}")
-print(f"Conclusión: {'Hipótesis soportada' if delta > 0 else 'Hipótesis rechazada'}")
-```
+**Siguiente paso:** Fase 5B — Módulo XAI local (`src/xai/shap_explainer.py`) para el backend.
 
 ---
 
 ## FASE 5: XAI - SHAP (Semana 7)
 
-### Paso 5.1 - Generar explicaciones
+> **Parte A (Colab) — ✅ COMPLETADA.** El análisis SHAP se ejecutó dentro del notebook `notebooks/colab_entrenamiento_evaluacion_xai.ipynb` (Pasos 5.1–5.3). Los archivos resultantes ya están en `reports/tables/xai_analysis/`.
+>
+> **Parte B (local) — ✅ COMPLETADA.** Módulo `src/xai/shap_explainer.py` implementado y listo para el backend.
 
-**Notebook:** `notebooks/08_xai.ipynb`
+**Archivos generados en Parte A:**
+
+| Archivo | Descripción |
+|---------|-------------|
+| `reports/tables/xai_analysis/shap_wrong_predictions.csv` | 20 errores (10 FP + 10 FN) seleccionados |
+| `reports/tables/xai_analysis/shap_analysis_results.csv` | Top-5 tokens SHAP por cada error |
+| `reports/tables/xai_analysis/shap_full_weights.json` | Pesos completos — consumido por el backend |
+| `reports/tables/xai_analysis/shap_modismo_tokens.csv` | Presencia de modismos LATAM en tokens relevantes |
+
+---
+
+## PARTE B — Módulo reutilizable (local)
+
+### Paso 5.4 - Crear `src/xai/shap_explainer.py`
+
+**Dónde:** Local (no necesita GPU, es código que correrá en el backend)
+**Para qué:** El backend (Fase 6) lo importa para responder el endpoint `POST /explain`.
+
+**Archivos implementados:**
+- `src/xai/__init__.py` — exporta `ShapExplainer`
+- `src/xai/shap_explainer.py` — clase con métodos `explain()` y `explain_top()`
+
+**Cómo verificar que funciona (requiere `models/beto_finetuned_final/`):**
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\xai\shap_explainer.py
+```
+
+**Cómo importar desde el backend:**
 
 ```python
-import shap
-import torch
-from transformers import pipeline
+from src.xai import ShapExplainer
 
-# Cargar modelo
-model_path = "models/beto_finetuned_final"
-pipe = pipeline("text-classification", model=model_path, device=0 if torch.cuda.is_available() else -1)
+exp = ShapExplainer("models/beto_finetuned_final")
 
-# SHAP explainer
-masker = shap.maskers.Text(tokenizer)
-explainer = shap.Explainer(pipe, masker)
+# Todos los tokens y pesos
+resultado = exp.explain("Ese pinche tipo me cae muy mal")
+# → {"tokens": [...], "pesos": [...]}
 
-# Ejemplos a explicar
-ejemplos = test_df["texto"].sample(10, random_state=42).tolist()
-
-# Generar explicaciones (esto puede tardar 1-2 min por ejemplo en CPU)
-for i, texto in enumerate(ejemplos):
-    print(f"Explicando ejemplo {i+1}/10...")
-    shap_values = explainer([texto])
-    # Visualizar (en notebook)
-    shap.plots.text(shap_values)
+# Solo top-5 tokens más influyentes
+resultado = exp.explain_top("Ese pinche tipo me cae muy mal", top_n=5)
+# → {"tokens": [...], "pesos": [...], "top_tokens": [...], "top_pesos": [...]}
 ```
+
+---
+
+### OK REALIZADO - Fase 5 Parte B
+
+**Se hizo:**
+
+- Se implementó `src/xai/shap_explainer.py` con la clase `ShapExplainer`:
+  - `__init__(model_path)` — carga tokenizador, pipeline HuggingFace y explainer SHAP (una sola vez al iniciar el backend)
+  - `explain(texto, max_chars=256)` — devuelve todos los tokens y sus pesos SHAP para la clase `hate`
+  - `explain_top(texto, top_n=5)` — igual que `explain()` más los top N tokens por peso absoluto
+- Se actualizó `src/xai/__init__.py` para exportar `ShapExplainer`.
+- Los pesos positivos empujan la predicción hacia `hate`; los negativos hacia `no_hate`.
+- El texto se trunca a 256 caracteres por defecto para mantener latencia razonable en CPU.
+
+**Archivos creados/modificados:**
+
+| Archivo | Contenido |
+|---------|-----------|
+| `src/xai/shap_explainer.py` | Clase `ShapExplainer` con `explain()` y `explain_top()` |
+| `src/xai/__init__.py` | Exporta `ShapExplainer` |
+
+**Siguiente paso:** Fase 6 — Backend FastAPI.
 
 ---
 
@@ -1920,9 +1550,9 @@ git tag v1.0
 
 ---
 
-## 📋 ESTADO DE PROGRESO — Última actualización: 2026-06-06
+## 📋 ESTADO DE PROGRESO — Última actualización: 2026-06-28
 
-### Avance actual: **Paso 1.3 (Fase 1) + Extensión completa (Fase 7)**
+### Avance actual: **Fase 1 COMPLETA ✅ + Fase 2 COMPLETA ✅ + Extensión Chrome (Fase 7) COMPLETA ✅**
 
 #### Lo que se completó:
 
@@ -1933,15 +1563,26 @@ git tag v1.0
 2. **Paso 1.1–1.2 — Identificación y verificación de datasets:** ✅
    - Fuentes verificadas: superset (29,855 ejemplos, 5 datasets) + DETOXIS (3,463 ejemplos).
    - Scripts de verificación ejecutados (`data/raw/analisis_dataset/`).
-   - Scripts de verificacion ejecutados (data/raw/analisis_dataset/verificar_corpus.py).
    - Documentacion en data/raw/analisis_dataset/README.md y data/raw/README_DATASET_RECOPIDOS.md.
+
 3. **Paso 1.3 — Exploración inicial:** ✅
    - Pipeline reproducible (`scripts/exploracion_inicial.py` + `notebooks/01_exploracion.ipynb`).
    - Reporte automático en `data/reports_qc/exploracion_inicial.md` con 4 figuras.
    - Total combinado: 37,026 filas tras carga inicial (HatEval filtrado a ES).
    - Confirmado el rol crítico de Chilean para H3 (9.6% de textos con seeds LATAM).
 
-4. **Fase 7 — Extensión Chrome (COMPLETA):** ✅
+4. **Pasos 1.4–1.11 — Pipeline completo de datos:** ✅
+   - `clean.py`, `unify.py`, `lexicon.py`, `enrich.py`, `qc.py`, `split.py`, `crear_manifest.py`, `generar_reporte_qc_final.py`.
+   - Corpus final: 33,318 filas → train (23,090) / val (4,948) / test (4,949), sin leakage.
+
+5. **Fase 2 — Fine-tuning de modelos (COMPLETA):** ✅
+   - BETO entrenado con semillas 42, 123, 2024 → `models/beto_finetuned_*/`
+   - mBERT entrenado con semillas 42, 123, 2024 → `models/mbert_finetuned_*/`
+   - XLM-R entrenado con semillas 42, 123, 2024 → `models/xlmr_finetuned_*/`
+   - Mejor BETO copiado a `models/beto_finetuned_final/`
+   - Total: **10 modelos** entrenados en Google Colab (GPU T4).
+
+6. **Fase 7 — Extensión Chrome (COMPLETA):** ✅
    - Prototipo beta funcional (v0.9.0) desarrollado y probado.
    - Detección 100% local por lexicón (sin BETO, funciona ya).
    - Frontend limpio, moderno, tema claro (violeta suave).
@@ -1984,26 +1625,30 @@ git tag v1.0
 
 ### Cómo continuar (Esta sección, y además dentro de cada paso descrito anteriormente, se debe actualizar cada vez que se avanza en el proyecto):
 
-1. **Inmediato (Fase 1):**
-   - OK Superset disponible en data/raw/spanish-hate-speech-superset/es_hf_102024.csv (29,855 ejemplos).
-   - OK DETOXIS disponible en data/raw/DETOXIS_2021-main/data/DATASET_DETOXIS.csv (3,463 ejemplos).
-   - OK Exploracion del corpus base ejecutada (superset + DETOXIS). Ver `data/reports_qc/exploracion_inicial.md`.
-   - **Siguiente: Paso 1.4** - implementar src/data/clean.py con 
-ormalizar() (solo para DETOXIS).
-   - **Paso 1.5** - 
-otebooks/02_unificacion.ipynb: adaptar columnas del superset + normalizar/mapear DETOXIS + concatenar al esquema canonico.
-   - **Pasos 1.6-1.10** - lexicon LATAM (data/lexicons/modismos_latam_v1.csv), enriquecimiento (	iene_modismo), QC, particionado 70/15/15.
-2. **Cuando BETO esté entrenado (Fase 3 → Fase 6):**
+1. **Completado (Fase 1):** ✅
+   - Superset + DETOXIS verificados, explorados, unificados, enriquecidos con `tiene_modismo`, validados (QC), particionados (70/15/15) y manifiestos generados.
+
+2. **Completado (Fase 2):** ✅
+   - 10 modelos entrenados: BETO × 3 semillas, mBERT × 3 semillas, XLM-R × 3 semillas, BETO final.
+   - Todo en `models/`.
+
+3. **Siguiente: Fase 3 — Evaluación en test set:**
+   - Crear `scripts/evaluate_model.py` (código en Paso 3.1 de este documento).
+   - Ejecutar evaluación en los 9 modelos: `python scripts/evaluate_model.py --all`.
+   - Calcular intervalos de confianza con bootstrap (Paso 3.3).
+   - Test de McNemar para significancia estadística (Paso 3.4).
+   - Generar tablas comparativas en `reports/tables/`.
+
+4. **Cuando BETO esté evaluado (Fase 3 → Fase 6 → integración extensión):**
    - Usar `documentos_extras/guia-extension.md`, **Sección 11.1** como mapa exacto.
    - Tabla con 8 archivos a modificar (paso a paso, qué línea cambiar).
    - Modificar `content.js`, `background.js`, `styles.css`.
    - Activar API desde la Options Page (`apiHabilitada=true`).
    - Testar end-to-end con backend en `localhost:8000`.
 
-3. **Para entender la arquitectura:**
-   - Leer `documentos_extras/guia.md` Sección 15 (Extensión).
+5. **Para entender la arquitectura:**
+   - Leer `documentos_extras/INSTRUCCIONES_PROYECTO.md` Sección 15 (Extensión).
    - Leer `documentos_extras/modelo-de-analisis.md` (flujos de datos).
-   - Leer `ARQUITECTURA_CREADA.md` para visión general.
 
 ---
 

@@ -1,7 +1,7 @@
-# COMENZAR AQUÍ — Guía de Replicación
+# GUIA DE REPRODUCCIÓN — Replicar el proyecto desde cero
 
 > Este archivo te lleva de cero a replicar el estado actual del proyecto con comandos concretos.
-> Se actualiza con cada paso completado. Estado actual: **Paso 1.10 completado**.
+> Se actualiza con cada paso completado. Estado actual: **Fase 1 COMPLETA ✅ — Fase 2 COMPLETA ✅ — Fase 3 COMPLETA ✅ — Fase 4 COMPLETA ✅ — Fase 5A COMPLETA ✅ — Fase 5B COMPLETA ✅ — Fase 6 pendiente ⏳**.
 
 ---
 
@@ -14,7 +14,7 @@ Sistema de detección automática de discurso de odio en español. El núcleo es
 - **H2** — BETO ajustado iguala o supera a mBERT y XLM-R en español
 - **H3** — BETO ajustado rinde mejor en textos con modismos LATAM que sin ellos
 
-Para más detalle técnico: [`guia.md`](guia.md) | Para el itinerario paso a paso: [`desarrollo.md`](desarrollo.md)
+Para más detalle técnico: [`INSTRUCCIONES_PROYECTO.md`](INSTRUCCIONES_PROYECTO.md) | Para el itinerario paso a paso: [`PLAN_DESARROLLO.md`](PLAN_DESARROLLO.md)
 
 ---
 
@@ -374,12 +374,156 @@ Paso 1.10 completado exitosamente.
 
 ---
 
-## Próximos pasos (aún no implementados)
+### 1.11 — Reporte QC final del corpus v1 ✅
 
-| Paso | Descripción |
-|------|-------------|
-| **1.11** | Reporte QC final |
-| **Fase 2** | Entrenamiento de BETO, mBERT y XLM-R (requiere GPU) |
+Genera la figura de 4 paneles y el reporte QC completo que integra los datos del corpus enriquecido y los tres splits (train/val/test).
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe scripts\generar_reporte_qc_final.py
+```
+
+**Salidas generadas:**
+- `data/reports_qc/figuras/qc_corpus_v1_4paneles.png` — 4 paneles: clases, modismos, datasets, longitudes
+- `data/reports_qc/qc_corpus_v1_final.md` — Reporte QC final con tabla de splits, cruzada etiqueta×modismo y checklist de aserciones + leakage
+
+| Métrica | Valor |
+|---------|-------|
+| Corpus total | 33,318 filas |
+| Hate (1) | 7,603 (22.8%) |
+| No hate (0) | 25,715 (77.2%) |
+| Con modismo | 17,722 (53.2%) |
+| Data leakage | 0 solapamientos ✅ |
+| Todas las aserciones QC | ✅ OK |
+
+> **La Fase 1 está completa.** El siguiente paso es la Fase 2: entrenar los modelos (requiere GPU).
+
+---
+
+## PASOS 2, 3, 4 Y 5A — Fine-tuning, Evaluación, Modismos y XAI ✅
+
+> **Todo en un solo notebook de Colab:** `notebooks/colab_entrenamiento_evaluacion_xai.ipynb`  
+> Todas estas fases están completadas. Este paso explica cómo replicarlas.
+
+### Qué cubre el notebook
+
+| Fase | Qué hace | Salidas en Drive |
+|------|----------|------------------|
+| **Fase 2** | Fine-tuning de BETO, mBERT y XLM-R (3 semillas c/u) + selección del mejor BETO | `models/` (10 carpetas) |
+| **Fase 3** | Evaluación en test set, bootstrap (IC 95%), test de McNemar | `reports/tables/`, `reports/predictions/` |
+| **Fase 4** | Segmentación por modismos LATAM, validación estadística de H3 | `reports/tables/h3_idiom_analysis/` |
+| **Fase 5A** | Análisis SHAP — explicabilidad sobre errores de BETO (necesita GPU) | `reports/tables/xai_analysis/` |
+
+### Paso A — Preparar Google Drive
+
+Sube a `Mi unidad/unmsm/ciclo 2026-1/tesis/COLAB/` desde tu PC local:
+
+```
+COLAB/
+├── data/processed/
+│   ├── train.parquet
+│   ├── val.parquet
+│   ├── test.parquet
+│   └── corpus_v1_enriquecido.parquet
+└── scripts/
+    ├── train_model.py
+    └── evaluate_model.py
+```
+
+### Paso B — Ejecutar en Colab
+
+1. Abre [colab.research.google.com](https://colab.research.google.com) → carga `notebooks/colab_entrenamiento_evaluacion_xai.ipynb` desde Drive
+2. Menú `Entorno de ejecución` → `Cambiar tipo` → **GPU T4**
+3. Ejecuta las celdas de **arriba hacia abajo**, una a una
+
+> Si Colab se desconecta, todos los archivos ya guardados en Drive quedan intactos. Solo continúa desde la celda siguiente.
+>
+> **Tiempo estimado:** Fase 2 ≈ 9–12 h | Fase 3 ≈ 30 min | Fase 4 ≈ 10 min | Fase 5A ≈ 20–30 min
+
+### Paso C — Descargar resultados a tu PC
+
+Al terminar, descarga desde Drive hacia `Tesis_Proyecto/`:
+
+```powershell
+# Verificar estructura local una vez descargados:
+dir models\
+dir reports\tables\
+dir reports\predictions\
+dir reports\tables\h3_idiom_analysis\
+dir reports\tables\xai_analysis\
+```
+
+**Resultado esperado:**
+
+```
+models/
+├── beto_finetuned_42/         ← model.safetensors + tokenizador
+├── beto_finetuned_123/
+├── beto_finetuned_2024/
+├── beto_finetuned_final/      ← mejor BETO (F1-val=0.7186, seed=42)
+├── mbert_finetuned_42/
+├── mbert_finetuned_123/
+├── mbert_finetuned_2024/
+├── xlmr_finetuned_42/         ← incluye sentencepiece.bpe.model
+├── xlmr_finetuned_123/
+└── xlmr_finetuned_2024/
+
+reports/
+├── tables/
+│   ├── metrics_all_models.csv
+│   ├── metrics_all_models.json
+│   ├── comparativa_global.csv
+│   ├── bootstrap_ic.csv
+│   ├── mcnemar_results.csv
+│   ├── h3_idiom_analysis/
+│   │   ├── h3_test_segmentation.csv
+│   │   ├── h3_beto_evaluation_subsets.csv
+│   │   └── h3_hypothesis_validation.csv
+│   └── xai_analysis/              ← Fase 5A
+│       ├── shap_wrong_predictions.csv
+│       ├── shap_analysis_results.csv
+│       ├── shap_full_weights.json
+│       └── shap_modismo_tokens.csv
+└── predictions/
+    ├── beto_42_preds.csv  ...  xlmr_2024_preds.csv  (9 archivos)
+```
+
+---
+
+## PASO 5B — Módulo XAI local ✅
+
+Crea la clase `ShapExplainer` que el backend usa para el endpoint `/explain`.
+No necesita GPU — solo ejecutar en local.
+
+Los archivos ya están implementados. Para verificar que funcionan (requiere `models/beto_finetuned_final/`):
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe src\xai\shap_explainer.py
+```
+
+**Salida esperada:**
+```
+Cargando ShapExplainer...
+  Modelo: models/beto_finetuned_final
+  ✅ Explainer cargado
+
+Texto: 'Ese pinche tipo me cae muy mal'
+  Tokens (...): ['ese', 'pinche', 'tipo', ...]
+  Top-3 tokens: [('pinche', 0.42), ('tipo', 0.10), ...]
+```
+
+**Archivos:**
+- `src/xai/shap_explainer.py` — clase `ShapExplainer` con `explain()` y `explain_top()`
+- `src/xai/__init__.py` — exporta `ShapExplainer`
+
+**Cómo lo usará el backend (Fase 6):**
+
+```python
+from src.xai import ShapExplainer
+
+exp = ShapExplainer("models/beto_finetuned_final")
+resultado = exp.explain("Ese pinche tipo me cae muy mal")
+# → {"tokens": [...], "pesos": [...]}
+```
 
 ---
 
@@ -387,7 +531,7 @@ Paso 1.10 completado exitosamente.
 
 | Archivo | Para qué sirve |
 |---------|---------------|
-| [`guia.md`](guia.md) | Especificación técnica completa (22 secciones) |
-| [`desarrollo.md`](desarrollo.md) | Itinerario paso a paso con código y estado de cada paso |
+| [`INSTRUCCIONES_PROYECTO.md`](INSTRUCCIONES_PROYECTO.md) | Enunciado oficial y especificación técnica completa (22 secciones) |
+| [`PLAN_DESARROLLO.md`](PLAN_DESARROLLO.md) | Itinerario paso a paso con código y estado de cada paso |
 | [`../EXPERIMENTOS.md`](../EXPERIMENTOS.md) | Bitácora científica — registrar decisiones y resultados |
-| [`../ESTADO_PROYECTO.md`](../ESTADO_PROYECTO.md) | Resumen ejecutivo del estado actual |
+| [`ESTADO_PROYECTO.md`](ESTADO_PROYECTO.md) | Resumen ejecutivo del estado actual |

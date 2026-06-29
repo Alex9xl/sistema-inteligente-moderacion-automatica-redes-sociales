@@ -1,0 +1,21 @@
+texto,etiqueta,y_pred,prob_hate,tiene_modismo,error_type
+"@USER Uy, por quién me tomas, por una loca agresiva? 😅😅",0,1,0.9824508,True,falso_positivo
+"@USER Venga, todos los fachas conmigo...EA EA EA, VENEZUELA SE CABREA...Venga esa borregada, que no se os escucha...",0,1,0.97534955,True,falso_positivo
+"@USER @USER Los fascistas cuando son imbéciles, se denominan antifascistas.....aquí un ejemplo😂😂😂😂😂😂😂",0,1,0.7163801,False,falso_positivo
+"@USER @USER Se sabía, pero dale q las gallinas mean  La izquierda toda, toda fue x el apruebo y un gran porcentaje d la derechita y ahora, estan ""aterrados"" le dieron navajas a los monos y ahora cuiden el ""cogote"" o terminaran, degollados, tropa d zanganos",0,1,0.8903177,False,falso_positivo
+La madre de Mon El está puto loca co,0,1,0.90821344,True,falso_positivo
+"Tampoco se cierra al puerta del Estado donde no dejan de ingresar politicos ANTIESPAÑOLES, pagados por paises extranjeros y miles de asesores y enchufados a los que parece que tenemos que mantener hasta que doblen, que con tan buena vida seguro que sera tarde.",0,1,0.8735291,False,falso_positivo
+Cuando ciclismo se parece demasiado a lo detestable de otros deportes. Mucho monguer. LINK,0,1,0.90420496,False,falso_positivo
+@USER ¿Qué apuestas a que no hace nada por las musulmanas? Ellos en slips y ellas apenas enseñan la cara.,0,1,0.9042442,False,falso_positivo
+"Los de #BoicotALosGoya, yo no me lo perdería, creo q les dan el premio a los más fachas a vuestros iconos, Bertín, Arévalo y Toni Cantó",0,1,0.8963395,True,falso_positivo
+@USER mucho subnormal suelto para mi gusto,0,1,0.936733,True,falso_positivo
+TOMA @USER Y LA PUTA Q TE PARIO PENDEJA COMUNISTA DE MIERDA LINK,1,0,0.3958569,True,falso_negativo
+@USER Los albañiles bolivianos q me están reformando la cocina y el baño son unos gentlemen al lado de esta guarrilla callejolera.,1,0,0.24532288,True,falso_negativo
+"Azul hombres, rosado mujeres #falso LINK",1,0,0.04696617,False,falso_negativo
+Le tuve que enseñar mi Whatsapp al técnico de AT&T y ahora sabe que soy puta,1,0,0.4232025,True,falso_negativo
+"@USER Catalunya ha votado a la facha de la arrimadas, que los catalanes independientes tengan mas escaños es otra cosa muy diferente como para decir que hemos votado independencia...",1,0,0.0150407925,True,falso_negativo
+"@USER ALGUIEN HA EXPKICADO PORQUE LOS ARGENTINOS NO QUIEREN PRODUCUR ? RESULTA QUE EL GOBIERNO LES PUSO IMPUESTOS DE 95% DE LAZ UTILIDADES ,CUYOS RECURSOS LOS UTILIZAN PARA PAGAR BONOS Y TENER CAUTIVOS A SUS VOTANTES MEDISNTRS ESTOS PAGOS Y ASI  MANTENERSE EN EL PODER Y SEGUIR ROBANDO",1,0,0.4984607,False,falso_negativo
+@USER No creo que muera antes de que los musulmanes tengan representación en el parlamento español.\nLa única esperanza es @USER,1,0,0.17435387,False,falso_negativo
+lastima que no se volvio loco del todo y se suicido de paso..,1,0,0.03633588,True,falso_negativo
+Un ladron menos q llega a España y ganamos un asesino mas!,1,0,0.15105446,True,falso_negativo
+"Ahora pides asilo político HDP, ahora las escorias oficialistas pidiendo asilo que tal. LINK",1,0,0.26947895,True,falso_negativo

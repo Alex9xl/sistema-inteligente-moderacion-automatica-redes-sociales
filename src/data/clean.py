@@ -16,7 +16,7 @@ Reglas aplicadas (en orden):
   8. Colapsar repeticiones extremas de caracteres (holaaaaaa → holaa)
   9. Colapsar espacios múltiples y recortar
 
-Referencia de diseño: guia.md §6.6 "Manejo de ruido".
+Referencia de diseño: INSTRUCCIONES_PROYECTO.md §6.6 "Manejo de ruido".
 """
 
 import re

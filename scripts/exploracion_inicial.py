@@ -2,7 +2,7 @@
 """
 scripts/exploracion_inicial.py
 ==============================
-Paso 1.3 del proyecto (ver `documentos_extras/desarrollo.md`).
+Paso 1.3 del proyecto (ver `documentos_extras/PLAN_DESARROLLO.md`).
 
 Exploración del corpus base compuesto por:
   1. Spanish Hate Speech Superset (Tonneau et al., 2024) — WOAH/ACL

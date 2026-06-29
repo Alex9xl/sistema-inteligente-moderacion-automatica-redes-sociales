@@ -19,4 +19,4 @@ Definiciones de términos técnicos y académicos usados en el proyecto.
 | **Content Script** | Script inyectado en el contexto de la página visitada |
 | **CORS** | Cross-Origin Resource Sharing, política de seguridad del navegador |
 
-Ver `guia.md` sección 21 para glosario completo.
+Ver `documentos_extras/INSTRUCCIONES_PROYECTO.md` sección 21 para glosario completo.

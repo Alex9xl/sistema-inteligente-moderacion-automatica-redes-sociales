@@ -13,7 +13,7 @@
  *   - Limpiar todo cuando el usuario desactiva la detección.
  *
  * ──────────────────────────────────────────────────────────────────────
- * INTEGRACIÓN FUTURA CON BETO  (ver guia.md §15.5 / §15.6)
+ * INTEGRACIÓN FUTURA CON BETO  (ver INSTRUCCIONES_PROYECTO.md §15.5 / §15.6)
  * ──────────────────────────────────────────────────────────────────────
  *  Cuando el modelo BETO ajustado esté entrenado:
  *    1) Activar `apiHabilitada` desde la página de opciones.
@@ -338,7 +338,7 @@ function limpiarMarcas() {
  *   2) Implementar `aplicarResultadoML(...)` para envolver el nodo
  *      en un `<mark class="hate-ml">` cuando probabilidad >= umbralMl.
  *   3) Añadir las clases CSS .hate-ml y .hate-explain-token a styles.css
- *      (ver guia.md §15.10).
+ *      (ver INSTRUCCIONES_PROYECTO.md §15.10).
  */
 
 // eslint-disable-next-line no-unused-vars

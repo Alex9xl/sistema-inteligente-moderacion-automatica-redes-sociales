@@ -401,7 +401,11 @@ httpx>=0.27
 Tesis_Proyecto/
 ├── README.md                         # visión rápida, comandos básicos
 ├── EXPERIMENTOS.md                   # bitácora científica obligatoria
-├── guia.md                           # este documento maestro
+├── documentos_extras/
+│   ├── INSTRUCCIONES_PROYECTO.md     # enunciado y especificación técnica (este documento)
+│   ├── PLAN_DESARROLLO.md            # itinerario paso a paso
+│   ├── GUIA_REPRODUCCION.md            # guía para reproducir resultados
+│   └── ESTADO_PROYECTO.md              # resumen ejecutivo del avance
 ├── LICENSE
 ├── .gitignore
 ├── .pre-commit-config.yaml
@@ -2513,4 +2517,4 @@ Pasos de resaltado ML:
 
 **Fin del documento maestro.**
 
-Este documento debe acompañarse siempre del archivo `EXPERIMENTOS.md`, donde se registra el detalle ejecutivo de cada corrida experimental, y del `MANIFEST.json`, que garantiza la trazabilidad de los artefactos. La combinación de los tres archivos (guia.md + EXPERIMENTOS.md + MANIFEST.json) constituye la **bitácora científica completa** del proyecto.
+Este documento debe acompañarse siempre del archivo `EXPERIMENTOS.md`, donde se registra el detalle ejecutivo de cada corrida experimental, y del `MANIFEST.json`, que garantiza la trazabilidad de los artefactos. La combinación de los tres archivos (`INSTRUCCIONES_PROYECTO.md` + `EXPERIMENTOS.md` + `MANIFEST.json`) constituye la **bitácora científica completa** del proyecto.

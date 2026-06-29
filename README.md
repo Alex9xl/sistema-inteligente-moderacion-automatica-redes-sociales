@@ -45,15 +45,18 @@ make test
 
 ## Estructura del proyecto
 
-Consulta `guia.md` para la especificación técnica completa.
+Consulta `documentos_extras/INSTRUCCIONES_PROYECTO.md` para la especificación técnica completa.
 
-Consulta `desarrollo.md` para los pasos de ejecución paso a paso.
+Consulta `documentos_extras/PLAN_DESARROLLO.md` para los pasos de ejecución paso a paso.
+
+Consulta `documentos_extras/GUIA_REPRODUCCION.md` para reproducir datos, notebooks y resultados desde cero.
 
 ## Documentos principales
 
-- `guia.md` - Especificación técnica y metodológica completa
+- `documentos_extras/INSTRUCCIONES_PROYECTO.md` - Enunciado oficial y especificación técnica/metodológica
+- `documentos_extras/PLAN_DESARROLLO.md` - Guía ejecutable paso a paso (decisiones, avances y aprendizaje)
+- `documentos_extras/GUIA_REPRODUCCION.md` - Guía de replicación para evaluadores externos
 - `EXPERIMENTOS.md` - Bitácora de decisiones y corridas experimentales
-- `desarrollo.md` - Guía ejecutable paso a paso
 - `data/processed/MANIFEST.json` - Versiones y hashes de artefactos
 
 ## Licencia
