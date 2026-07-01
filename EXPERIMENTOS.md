@@ -97,6 +97,15 @@ Modelos entrenados con tres semillas:
 - XLM-R: `models/xlmr_finetuned_42`, `models/xlmr_finetuned_123`,
   `models/xlmr_finetuned_2024`.
 
+Baseline H1 adicional:
+
+- BETO base sin fine-tuning: `dccuchile/bert-base-spanish-wwm-cased` con cabeza
+  binaria no especializada. Se evalua como baseline no ajustado para contrastar
+  H1, no como modelo de produccion.
+- Predicciones: `reports/predictions/beto_base_preds.csv`.
+- Metricas: `reports/tables/beto_base_metrics.csv`.
+- Comparacion H1: `reports/tables/h1_beto_base_comparison.csv`.
+
 Modelo final empaquetado:
 
 - Directorio: `models/beto_finetuned_final`.
@@ -113,6 +122,7 @@ Fuente: `reports/tables/comparativa_global.csv`.
 
 | Modelo | Precision hate | Recall hate | F1 hate | F1 macro | Accuracy | ROC-AUC |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| BETO base sin fine-tuning | 0.1880 | 0.0416 | 0.0682 | 0.4587 | 0.7404 | 0.5148 |
 | BETO ajustado | 0.6772 +/- 0.0220 | 0.6859 +/- 0.0241 | 0.6810 +/- 0.0049 | 0.7929 +/- 0.0037 | 0.8534 +/- 0.0053 | 0.8912 +/- 0.0040 |
 | mBERT | 0.6090 +/- 0.0564 | 0.7018 +/- 0.0816 | 0.6474 +/- 0.0058 | 0.7657 +/- 0.0045 | 0.8259 +/- 0.0161 | 0.8703 +/- 0.0068 |
 | XLM-R | 0.6272 +/- 0.0034 | 0.7148 +/- 0.0128 | 0.6681 +/- 0.0063 | 0.7805 +/- 0.0036 | 0.8380 +/- 0.0020 | 0.8881 +/- 0.0037 |
@@ -134,6 +144,7 @@ Fuente: `reports/tables/mcnemar_results.csv`.
 
 | Comparacion | Semilla | p-valor | Significativo alpha=0.05 | Lectura |
 | --- | ---: | ---: | --- | --- |
+| BETO ajustado vs BETO base | 123 | 1.7095e-62 | Si | H1 respaldada: BETO ajustado supera ampliamente al BETO base no especializado. |
 | BETO vs mBERT | 42 | 1.7806e-11 | Si | BETO supera a mBERT con diferencia pareada significativa. |
 | BETO vs XLM-R | 42 | 0.1174 | No | BETO no difiere significativamente de XLM-R en esta prueba. |
 | mBERT vs XLM-R | 42 | 2.2162e-07 | Si | XLM-R supera a mBERT de forma significativa. |
@@ -202,12 +213,19 @@ Extension:
 
 ### H1: BETO ajustado > BETO base
 
-Estado: evidencia incompleta en los artefactos finales disponibles.
+Estado: soportada.
 
-La comparativa final contiene BETO ajustado, mBERT y XLM-R, pero no incluye una
-tabla separada de BETO base sin fine-tuning. Por rigor metodologico, H1 no debe
-declararse aceptada estadisticamente hasta incorporar ese baseline o justificar
-formalmente su ausencia en el informe.
+- Baseline: BETO base sin fine-tuning (`beto_base_no_finetune`) con cabeza
+  binaria aleatoria/no especializada.
+- F1 hate BETO ajustado semilla 123: 0.6858.
+- F1 hate BETO base: 0.0682.
+- Diferencia F1 hate: +0.6176.
+- McNemar exacto: `p=1.7095e-62`.
+- H1 soportada: si.
+
+Nota metodologica: este baseline se usa para contrastar H1 como modelo BETO no
+ajustado; no debe presentarse como un modelo productivo porque su cabeza de
+clasificacion no fue especializada en discurso de odio.
 
 ### H2: BETO ajustado >= mBERT y XLM-R
 
@@ -247,6 +265,6 @@ Ejecutadas localmente el 2026-07-01:
 - Se congela la extension como v1.0 con API BETO prioritaria.
 - Se mantiene el lexicon personal/local como respaldo de producto, separado del
   lexicon LATAM de investigacion.
-- Se documenta explicitamente la limitacion de H1 por ausencia de baseline BETO
-  base en las tablas finales disponibles.
+- Se incorpora baseline BETO base no especializado para cerrar H1; H1 queda
+  respaldada frente a BETO ajustado semilla 123.
 - La parte Git/GitHub queda para ejecucion manual del usuario: commit, tag y push.

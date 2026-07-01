@@ -1,0 +1,2 @@
+model,seed,precision_hate,recall_hate,f1_hate,precision_macro,recall_macro,f1_macro,accuracy,roc_auc,tn,fp,fn,tp,note
+beto_base_no_finetune,none,0.188,0.04162976085031001,0.0681653372008702,0.47886912108959356,0.4942441997968828,0.4586630184067504,0.7403515861790261,0.5147640269153538,3617,203,1082,47,BETO base sin fine-tuning; cabeza de clasificación aleatoria/no especializada

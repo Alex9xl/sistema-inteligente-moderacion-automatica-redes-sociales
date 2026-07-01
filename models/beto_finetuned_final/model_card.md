@@ -56,6 +56,16 @@ Sobre la semilla BETO evaluada para modismos:
 
 ## Comparacion estadistica pareada
 
+H1 contra BETO base sin fine-tuning:
+
+| Comparacion | F1 hate ajustado | F1 hate base | Delta F1 | p-value | H1 soportada |
+| --- | ---: | ---: | ---: | ---: | --- |
+| BETO ajustado seed 123 vs BETO base | 0.6858 | 0.0682 | +0.6176 | 1.7095e-62 | Si |
+
+Nota: el BETO base se evalua como baseline no especializado, con cabeza binaria
+aleatoria/no entrenada para discurso de odio. Sirve para contrastar H1, no como
+modelo productivo.
+
 McNemar semilla 42:
 
 | Comparacion | p-value | Significativo alpha=0.05 |

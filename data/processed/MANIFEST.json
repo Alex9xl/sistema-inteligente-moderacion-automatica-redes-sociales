@@ -77,7 +77,7 @@
       "model_sha256": "c9409f7a28183aa4f9fbadd94dc189d0b15ed47b84b08cb9aa83f2c4ce08e168",
       "directory_size_bytes": 440412980,
       "model_card": "models/beto_finetuned_final/model_card.md",
-      "model_card_sha256": "d5954e2228c65d115603d4509cc250451657def04c91ff0d7f39d97449115e6d"
+      "model_card_sha256": "a8e5770f862b9bea32f2b62b4178b80842c17cb2baf7dad9535c9604505df9f0"
     },
     "trained_directories": [
       "models/beto_finetuned_42",
@@ -94,11 +94,15 @@
   "evaluation": {
     "metrics_all_models": {
       "file": "reports/tables/metrics_all_models.csv",
-      "sha256": "e3626891f6aa720db15428096d5f3268ca5fe8519d2aed9088ed1e2df34d6a68"
+      "sha256": "878ad377afcf239b262f2f23a99a4f8c91da680f1eb57bb1329644eeb60c2075"
+    },
+    "metrics_all_models_json": {
+      "file": "reports/tables/metrics_all_models.json",
+      "sha256": "713978781629e5c9d6cc35f575aa6ee76f6a9a13e5c9960a8734c7dc82270bd6"
     },
     "comparativa_global": {
       "file": "reports/tables/comparativa_global.csv",
-      "sha256": "29043187b43bc049194ee7e243d37482b52f02b9bbb991cab1d5c015490733a1"
+      "sha256": "4b0d752d09484f08060c16c708316f7c3bfd482fe6a28c5a54b9c7e37478bf99"
     },
     "bootstrap_ic": {
       "file": "reports/tables/bootstrap_ic.csv",
@@ -106,7 +110,19 @@
     },
     "mcnemar": {
       "file": "reports/tables/mcnemar_results.csv",
-      "sha256": "af3e00d1327ea9f1fa8968f527239b20fd518de5435985b5cc1b9cf2e37365f3"
+      "sha256": "b0e0e1de5f39ccce171ce5bdcf7f292402723d89b37baf16f63d531d6e49a5a3"
+    },
+    "h1_beto_base_predictions": {
+      "file": "reports/predictions/beto_base_preds.csv",
+      "sha256": "e7a61fbce0daaf00493c8f36d18f15574df92df7aef6329c33f2bd7d203ba9c6"
+    },
+    "h1_beto_base_metrics": {
+      "file": "reports/tables/beto_base_metrics.csv",
+      "sha256": "ddcd5414d95768bee6800da3ee7a66f6833eff403f518d28439e439444c94135"
+    },
+    "h1_beto_base_comparison": {
+      "file": "reports/tables/h1_beto_base_comparison.csv",
+      "sha256": "56cf25b0b6231a03c908076c298d528fbfb2cd54b9493dd9113491a256213df1"
     },
     "h3_validation": {
       "file": "reports/tables/h3_idiom_analysis/h3_hypothesis_validation.csv",
@@ -117,8 +133,19 @@
       "sha256": "cae73591962481492660beb82bb0135409e37bfdd5f6e715244860729014599e"
     }
   },
+  "notebooks": {
+    "training_evaluation_xai": {
+      "file": "notebooks/colab_entrenamiento_evaluacion_xai.ipynb",
+      "sha256": "4ed58fded53050dbbc02fa5a6f7b925e45586cf21b7368ca9188d3d55c25f808",
+      "note": "Incluye celdas de baseline BETO base sin fine-tuning y comparacion H1."
+    }
+  },
   "final_results_summary": {
     "beto_mean_f1_hate": 0.681,
+    "beto_base_f1_hate": 0.0681653372008702,
+    "h1_f1_difference_seed_123": 0.6176257878551585,
+    "h1_mcnemar_pvalue": 1.7095337064350617e-62,
+    "h1_supported": true,
     "mbert_mean_f1_hate": 0.6474,
     "xlmr_mean_f1_hate": 0.6681,
     "beto_vs_mbert_mcnemar_p_seed_42": 1.7806066110777302e-11,
