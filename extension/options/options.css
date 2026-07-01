@@ -454,6 +454,69 @@ body {
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
+.range-control {
+  min-width: 148px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.range-control span {
+  min-width: 38px;
+  color: var(--accent-strong);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.range-control input {
+  width: 96px;
+  accent-color: var(--accent);
+}
+
+.api-health {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.api-health span:nth-child(2) {
+  flex: 1;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  box-shadow: 0 0 0 3px rgba(31, 27, 52, 0.05);
+  flex-shrink: 0;
+}
+
+.status-dot.small {
+  width: 7px;
+  height: 7px;
+}
+
+.status-dot.is-on {
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.status-dot.is-error {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
+.status-dot.is-warn {
+  background: var(--warning);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
 .privacy-panel {
   background: linear-gradient(
     135deg,
@@ -577,6 +640,11 @@ body {
 .btn-danger-ghost:hover {
   background: var(--danger-soft);
   border-color: var(--danger);
+}
+
+.btn-mini {
+  padding: 5px 9px;
+  font-size: 12px;
 }
 
 label.btn {

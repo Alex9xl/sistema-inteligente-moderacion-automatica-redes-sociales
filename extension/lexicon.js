@@ -1,10 +1,10 @@
 /**
- * Lexicón por defecto del prototipo (beta).
+ * Lexicón local de respaldo.
  *
- * Este diccionario es solo para la BETA mientras el modelo BETO ajustado
- * no está disponible. Cubre términos representativos en español neutro y
- * variantes LATAM. El usuario puede agregar/quitar términos desde la
- * página de opciones.
+ * Este diccionario se usa cuando la API BETO local esta deshabilitada,
+ * no tiene modelo cargado o no responde. Cubre terminos representativos
+ * en espanol neutro y variantes LATAM. El usuario puede agregar/quitar
+ * terminos desde la pagina de opciones.
  *
  * Categorías:
  *   - insultos: insultos generales y vulgares
@@ -13,8 +13,7 @@
  *   - latam: modismos LATAM con potencial ofensivo en contexto
  *
  * NOTA: Algunos términos son neutros en ciertos contextos. La detección por
- * lexicón es una aproximación simple; la versión final usará BETO para
- * decidir según contexto.
+ * lexicón es una aproximacion simple; BETO es el motor contextual principal.
  */
 
 const LEXICON_DEFAULT = {

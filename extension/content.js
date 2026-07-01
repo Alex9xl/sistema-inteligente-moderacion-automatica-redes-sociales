@@ -1,60 +1,48 @@
 /**
- * Content Script - Beta del Detector ES
+ * Content script - Detector ES v1.0.
  *
- * Modo prototipo: detección 100% local con lexicón. La integración con
- * BETO via API local quedará habilitada cuando el endpoint /predict esté
- * disponible (ver `apiHabilitada`).
- *
- * Responsabilidades:
- *   - Escanear el DOM en busca de palabras del lexicón.
- *   - Aplicar el modo de censura configurado (highlight/blur/asterisk/hide).
- *   - Reaccionar a cambios del DOM con MutationObserver + debounce.
- *   - Reportar conteo de detecciones al service worker.
- *   - Limpiar todo cuando el usuario desactiva la detección.
- *
- * ──────────────────────────────────────────────────────────────────────
- * INTEGRACIÓN FUTURA CON BETO  (ver INSTRUCCIONES_PROYECTO.md §15.5 / §15.6)
- * ──────────────────────────────────────────────────────────────────────
- *  Cuando el modelo BETO ajustado esté entrenado:
- *    1) Activar `apiHabilitada` desde la página de opciones.
- *    2) Llamar a `enviarLoteAlModelo(fragmentos)` después de cada escaneo.
- *    3) Implementar `aplicarResultadoML({id, etiqueta, probabilidad})`
- *       para envolver el nodo en una marca extra (.hate-ml) cuando la
- *       probabilidad supere `umbralMl`.
- *  Ya hay stubs señalizados con la etiqueta "TODO BETO".
- *  El módulo HateApi (api.js) ya está cargado y disponible como
- *  `self.HateApi` por si se prefiere llamar directamente a /predict
- *  desde el content script en lugar de pasarlo al service worker.
- * ──────────────────────────────────────────────────────────────────────
+ * Flujo operativo:
+ *   1. Si la API BETO esta habilitada y no esta en cooldown, se envian
+ *      fragmentos visibles al backend local y se censuran los resultados
+ *      que superan el umbral configurado.
+ *   2. Si la API esta deshabilitada, sin modelo cargado o falla, se activa
+ *      el lexicon local como respaldo controlado.
+ *   3. Un reintento de salud intenta volver a la API sin exigir recarga.
  */
 
-const SCAN_DEBOUNCE_MS = 400;
-const MAX_NODOS_POR_ESCANEO = 1500;
+const SCAN_DEBOUNCE_MS = 500;
+const MAX_NODOS_POR_ESCANEO = 5000;
+const MAX_ML_FRAGMENTOS_POR_ESCANEO = 80;
+const MIN_ML_CHARS = 15;
+const MAX_ML_CHARS = 512;
+const API_RETRY_MS = 30000;
+
 const HATE_MARK_CLASS = "hate-detect-mark";
 const HATE_NODE_FLAG = "data-hate-scanned";
+const ML_MARK_CLASS = "hate-ml-mark";
+const ML_ID_ATTR = "data-hate-ml-id";
+const ML_STATE_ATTR = "data-hate-ml-state";
 
 const config = {
   activo: false,
   modo: "highlight", // highlight | blur | asterisk | hide
-  palabrasUsuarioActivas: true,
-  apiHabilitada: false,
-  umbralMl: 0.7,   // Umbral de probabilidad para marcar como hate (sincronizado con storage)
+  apiHabilitada: true,
+  apiDisponible: null,
+  apiFallbackHasta: 0,
   apiUrl: "http://127.0.0.1:8000",
+  umbralMl: 0.7,
   lexiconUsuario: [],
   lexiconActivo: true,
   detectados: 0,
 };
 
-// Mapa id → elemento DOM para resolver los resultados del modelo.
 if (!window.__hateRefs) window.__hateRefs = {};
 
 let regexActiva = null;
 let observer = null;
 let debounceTimer = null;
-
-/* ============================================================
- * Inicialización
- * ============================================================ */
+let apiRetryTimer = null;
+let scanInProgress = false;
 
 (async function init() {
   const stored = await chrome.storage.local.get([
@@ -73,7 +61,7 @@ let debounceTimer = null;
     ? stored.palabrasUsuario
     : [];
   config.lexiconActivo = stored.lexiconActivo !== false;
-  config.apiHabilitada = !!stored.apiHabilitada;
+  config.apiHabilitada = stored.apiHabilitada !== false;
   config.umbralMl = typeof stored.umbralMl === "number" ? stored.umbralMl : 0.7;
   config.apiUrl = stored.apiUrl || "http://127.0.0.1:8000";
 
@@ -84,90 +72,126 @@ let debounceTimer = null;
   }
 })();
 
-/* ============================================================
- * Reaccionar a cambios de configuración
- * ============================================================ */
-
 chrome.storage.onChanged.addListener((changes) => {
-  let needRescan = false;
   let needRebuild = false;
+  let needCleanRescan = false;
 
   if (changes.deteccionActiva) {
     config.activo = !!changes.deteccionActiva.newValue;
-    if (config.activo) {
-      activar();
-    } else {
-      desactivar();
-    }
+    if (config.activo) activar();
+    else desactivar();
   }
+
   if (changes.modoCensura) {
     config.modo = changes.modoCensura.newValue || "highlight";
-    needRescan = true;
+    needCleanRescan = true;
   }
+
   if (changes.palabrasUsuario) {
-    config.lexiconUsuario = changes.palabrasUsuario.newValue || [];
+    config.lexiconUsuario = Array.isArray(changes.palabrasUsuario.newValue)
+      ? changes.palabrasUsuario.newValue
+      : [];
     needRebuild = true;
   }
+
   if (changes.lexiconActivo) {
     config.lexiconActivo = changes.lexiconActivo.newValue !== false;
     needRebuild = true;
   }
+
   if (changes.apiHabilitada) {
-    config.apiHabilitada = !!changes.apiHabilitada.newValue;
+    config.apiHabilitada = changes.apiHabilitada.newValue !== false;
+    config.apiDisponible = null;
+    config.apiFallbackHasta = 0;
+    clearTimeout(apiRetryTimer);
+    needCleanRescan = true;
   }
+
   if (changes.umbralMl) {
-    config.umbralMl = typeof changes.umbralMl.newValue === "number"
-      ? changes.umbralMl.newValue : 0.7;
+    config.umbralMl =
+      typeof changes.umbralMl.newValue === "number"
+        ? changes.umbralMl.newValue
+        : 0.7;
+    needCleanRescan = true;
   }
+
   if (changes.apiUrl) {
     config.apiUrl = changes.apiUrl.newValue || "http://127.0.0.1:8000";
+    config.apiDisponible = null;
+    config.apiFallbackHasta = 0;
+    clearTimeout(apiRetryTimer);
+    needCleanRescan = true;
   }
 
   if (needRebuild) rebuildRegex();
-  if ((needRescan || needRebuild) && config.activo) {
-    limpiarMarcas();
+
+  if ((needRebuild || needCleanRescan) && config.activo) {
+    reiniciarEscaneoCompleto();
     scheduleScan(0);
   }
 });
 
-/* ============================================================
- * Mensajes desde popup / background
- * ============================================================ */
-
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg && msg.tipo === "GET_STATS") {
-    sendResponse({ detectados: config.detectados, activo: config.activo });
+  if (!msg || !msg.tipo) return false;
+
+  if (msg.tipo === "GET_STATS") {
+    sendResponse({
+      detectados: config.detectados,
+      activo: config.activo,
+      apiHabilitada: config.apiHabilitada,
+      apiDisponible: config.apiDisponible,
+      ruta: rutaActiva(),
+    });
     return true;
   }
-  if (msg && msg.tipo === "RESCAN") {
+
+  if (msg.tipo === "RESCAN") {
     if (config.activo) {
-      limpiarMarcas();
+      reiniciarEscaneoCompleto();
       scheduleScan(0);
     }
     sendResponse({ ok: true });
     return true;
   }
-  // ── Resultado de inferencia BETO ──────────────────────────────
-  if (msg && msg.tipo === "RESULTADO") {
+
+  if (msg.tipo === "RESULTADO") {
     aplicarResultadoML(msg);
-    return false;
+    sendResponse({ ok: true });
+    return true;
   }
-  // ── Explicación SHAP (XAI) ────────────────────────────────────
-  if (msg && msg.tipo === "EXPLAIN_RES") {
+
+  if (msg.tipo === "API_STATUS") {
+    manejarEstadoApi(msg);
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.tipo === "API_UNAVAILABLE") {
+    manejarApiNoDisponible(msg);
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg.tipo === "EXPLAIN_RES") {
     aplicarExplicacion(msg);
-    return false;
+    sendResponse({ ok: true });
+    return true;
   }
+
+  return false;
 });
 
-/* ============================================================
- * Activar / desactivar
- * ============================================================ */
-
 function activar() {
+  if (!document.body) {
+    setTimeout(activar, 100);
+    return;
+  }
+
   if (!observer) {
     observer = new MutationObserver(() => scheduleScan());
     observer.observe(document.body, { childList: true, subtree: true });
   }
+
   scheduleScan(0);
 }
 
@@ -176,47 +200,77 @@ function desactivar() {
     observer.disconnect();
     observer = null;
   }
+  clearTimeout(debounceTimer);
+  clearTimeout(apiRetryTimer);
   limpiarMarcas();
+  limpiarEstadoMl();
   config.detectados = 0;
   enviarStats();
 }
 
 function scheduleScan(delay = SCAN_DEBOUNCE_MS) {
   if (!config.activo) return;
-  if (debounceTimer) clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(escanear, delay);
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    debounceTimer = null;
+    escanear();
+  }, delay);
 }
 
-/* ============================================================
- * Lexicón -> RegExp activa
- * ============================================================ */
+function rutaActiva() {
+  if (debeUsarApi()) return "api";
+  return "lexicon";
+}
+
+function debeUsarApi() {
+  return config.apiHabilitada && Date.now() >= config.apiFallbackHasta;
+}
 
 function rebuildRegex() {
   const lista = [];
-  if (config.lexiconActivo) {
+  if (config.lexiconActivo && typeof self.lexiconBuildDefaultSet === "function") {
     lista.push(...self.lexiconBuildDefaultSet());
   }
   if (Array.isArray(config.lexiconUsuario)) {
     lista.push(...config.lexiconUsuario);
   }
-  // Dedup
+
   const unicos = Array.from(
     new Set(
       lista
         .filter((t) => typeof t === "string")
         .map((t) => t.toLowerCase().trim())
-        .filter((t) => t.length > 0)
+        .filter(Boolean)
     )
   );
-  regexActiva = self.lexiconBuildRegex(unicos);
+
+  regexActiva =
+    typeof self.lexiconBuildRegex === "function"
+      ? self.lexiconBuildRegex(unicos)
+      : null;
 }
 
-/* ============================================================
- * Escaneo del DOM
- * ============================================================ */
-
 function escanear() {
-  if (!config.activo || !regexActiva) return;
+  if (!config.activo || !document.body || scanInProgress) return;
+  scanInProgress = true;
+
+  try {
+    if (debeUsarApi()) {
+      const fragmentos = recolectarFragmentosML();
+      if (fragmentos.length > 0) {
+        enviarLoteAlModelo(fragmentos);
+      }
+      return;
+    }
+
+    escanearLexicon();
+  } finally {
+    scanInProgress = false;
+  }
+}
+
+function escanearLexicon() {
+  if (!regexActiva) return;
 
   let nuevasDetecciones = 0;
   const walker = document.createTreeWalker(
@@ -225,22 +279,9 @@ function escanear() {
     {
       acceptNode(node) {
         const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
-        // Excluir scripts, estilos y campos editables
-        const tag = parent.tagName;
-        if (
-          tag === "SCRIPT" ||
-          tag === "STYLE" ||
-          tag === "NOSCRIPT" ||
-          tag === "TEXTAREA" ||
-          tag === "INPUT"
-        ) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        if (parent.isContentEditable) return NodeFilter.FILTER_REJECT;
+        if (!esNodoTextoProcesable(node, parent)) return NodeFilter.FILTER_REJECT;
         if (parent.closest(`.${HATE_MARK_CLASS}`)) return NodeFilter.FILTER_REJECT;
         if (parent.hasAttribute(HATE_NODE_FLAG)) return NodeFilter.FILTER_REJECT;
-        if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     }
@@ -250,8 +291,9 @@ function escanear() {
   let visitados = 0;
   let n;
   while ((n = walker.nextNode())) {
-    visitados++;
+    visitados += 1;
     if (visitados > MAX_NODOS_POR_ESCANEO) break;
+    regexActiva.lastIndex = 0;
     if (regexActiva.test(n.nodeValue)) {
       regexActiva.lastIndex = 0;
       objetivos.push(n);
@@ -259,56 +301,107 @@ function escanear() {
   }
 
   for (const textNode of objetivos) {
-    const procesados = procesarNodoTexto(textNode);
-    nuevasDetecciones += procesados;
+    nuevasDetecciones += procesarNodoTexto(textNode);
   }
 
   if (nuevasDetecciones > 0) {
     config.detectados += nuevasDetecciones;
     enviarStats();
   }
+}
 
-  // ── Integración BETO: recolectar fragmentos y enviar al modelo ──
-  if (config.apiHabilitada) {
-    const ML_SENT_ATTR = "data-hate-ml-id";
-    const fragmentos = [];
+function recolectarFragmentosML() {
+  const fragmentos = [];
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!esNodoTextoProcesable(node, parent)) return NodeFilter.FILTER_REJECT;
+        if (parent.closest(`.${HATE_MARK_CLASS}, .hate-explain-token`)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (parent.closest(`[${ML_STATE_ATTR}]`)) return NodeFilter.FILTER_REJECT;
+        if (!esVisible(parent)) return NodeFilter.FILTER_REJECT;
 
-    const walker2 = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode(node) {
-          const p = node.parentElement;
-          if (!p) return NodeFilter.FILTER_REJECT;
-          const tag = p.tagName;
-          if (["SCRIPT","STYLE","NOSCRIPT","TEXTAREA","INPUT"].includes(tag))
-            return NodeFilter.FILTER_REJECT;
-          if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
-          if (p.closest(".hate-ml")) return NodeFilter.FILTER_REJECT;
-          if (p.hasAttribute(ML_SENT_ATTR)) return NodeFilter.FILTER_REJECT;
-          const text = (node.nodeValue || "").trim();
-          if (text.length < 15) return NodeFilter.FILTER_REJECT;
-          return NodeFilter.FILTER_ACCEPT;
-        },
-      }
-    );
-
-    let wn;
-    while ((wn = walker2.nextNode()) && fragmentos.length < 50) {
-      const texto = wn.nodeValue.trim().slice(0, 512);
-      const id = "ml_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const parent = wn.parentElement;
-      if (parent) {
-        parent.setAttribute(ML_SENT_ATTR, id);
-        window.__hateRefs[id] = parent;
-        fragmentos.push({ id, texto });
-      }
+        const texto = normalizarTextoParaApi(node.nodeValue);
+        if (texto.length < MIN_ML_CHARS) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
     }
+  );
 
-    if (fragmentos.length > 0) {
-      enviarLoteAlModelo(fragmentos);
-    }
+  let visitados = 0;
+  let node;
+  while ((node = walker.nextNode())) {
+    visitados += 1;
+    if (visitados > MAX_NODOS_POR_ESCANEO) break;
+    if (fragmentos.length >= MAX_ML_FRAGMENTOS_POR_ESCANEO) break;
+
+    const parent = node.parentElement;
+    const texto = normalizarTextoParaApi(node.nodeValue);
+    if (!parent || texto.length < MIN_ML_CHARS) continue;
+
+    const id = crearMlId();
+    parent.setAttribute(ML_ID_ATTR, id);
+    parent.setAttribute(ML_STATE_ATTR, "pending");
+    window.__hateRefs[id] = {
+      node,
+      parent,
+      texto,
+      original: node.nodeValue || "",
+    };
+    fragmentos.push({ id, texto });
   }
+
+  return fragmentos;
+}
+
+function esNodoTextoProcesable(node, parent) {
+  if (!node || !parent) return false;
+  const tag = parent.tagName;
+  if (
+    [
+      "SCRIPT",
+      "STYLE",
+      "NOSCRIPT",
+      "TEXTAREA",
+      "INPUT",
+      "SELECT",
+      "OPTION",
+      "SVG",
+      "CANVAS",
+    ].includes(tag)
+  ) {
+    return false;
+  }
+  if (parent.isContentEditable) return false;
+  if (parent.closest("[contenteditable='true']")) return false;
+  return !!node.nodeValue && !!node.nodeValue.trim();
+}
+
+function esVisible(el) {
+  if (!el || el.closest("[hidden], [aria-hidden='true']")) return false;
+  const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+  if (style && (style.display === "none" || style.visibility === "hidden")) {
+    return false;
+  }
+  if (typeof el.getClientRects === "function" && el.getClientRects().length === 0) {
+    return false;
+  }
+  return true;
+}
+
+function normalizarTextoParaApi(texto) {
+  return String(texto || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_ML_CHARS);
+}
+
+function crearMlId() {
+  return "ml_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
 }
 
 function procesarNodoTexto(textNode) {
@@ -326,9 +419,10 @@ function procesarNodoTexto(textNode) {
     if (start > cursor) {
       fragment.appendChild(document.createTextNode(valor.slice(cursor, start)));
     }
-    fragment.appendChild(crearMarca(m[0]));
+    fragment.appendChild(crearMarcaLexicon(m[0]));
     cursor = end;
   }
+
   if (cursor < valor.length) {
     fragment.appendChild(document.createTextNode(valor.slice(cursor)));
   }
@@ -338,27 +432,56 @@ function procesarNodoTexto(textNode) {
     parent.replaceChild(fragment, textNode);
     if (parent.setAttribute) parent.setAttribute(HATE_NODE_FLAG, "1");
   }
+
   return matches.length;
 }
 
-function crearMarca(textoOriginal) {
+function crearMarcaLexicon(textoOriginal) {
+  return crearMarcaCensura({
+    textoOriginal,
+    origen: "lexicon",
+    titulo: "Detectado por lexicon local",
+  });
+}
+
+function crearMarcaML(textoOriginal, probabilidad, id, textoApi) {
+  const p = Number.isFinite(probabilidad) ? probabilidad.toFixed(2) : "?";
+  const mark = crearMarcaCensura({
+    textoOriginal,
+    origen: "ml",
+    titulo: `BETO API: hate (p=${p})`,
+  });
+  mark.classList.add(ML_MARK_CLASS);
+  mark.dataset.hateMlId = id;
+  mark.dataset.hateMlProb = String(probabilidad);
+  mark.addEventListener("click", (event) => {
+    if (config.modo === "blur" || config.modo === "hide") return;
+    event.stopPropagation();
+    solicitarExplicacion(id, textoApi);
+  });
+  return mark;
+}
+
+function crearMarcaCensura({ textoOriginal, origen, titulo }) {
   const span = document.createElement("span");
-  span.className = HATE_MARK_CLASS + " hate-detect-mode-" + config.modo;
+  span.className = `${HATE_MARK_CLASS} hate-detect-mode-${config.modo}`;
   span.dataset.hateOriginal = textoOriginal;
+  span.dataset.hateSource = origen;
+  span.title = titulo;
 
   switch (config.modo) {
     case "asterisk":
-      span.textContent = "*".repeat(Math.max(3, textoOriginal.length));
-      span.title = "Censurado por el detector";
+      span.textContent = "*".repeat(Math.max(3, textoOriginal.trim().length || 3));
+      span.title = titulo;
       break;
     case "blur":
       span.textContent = textoOriginal;
-      span.title = "Texto sospechoso (clic para revelar)";
+      span.title = `${titulo}. Clic para revelar`;
       span.addEventListener("click", () => span.classList.toggle("revealed"));
       break;
     case "hide":
       span.textContent = "[contenido oculto]";
-      span.title = "Texto oculto por el detector";
+      span.title = `${titulo}. Clic para revelar`;
       span.addEventListener("click", () => {
         span.textContent = textoOriginal;
         span.classList.add("revealed");
@@ -367,91 +490,267 @@ function crearMarca(textoOriginal) {
     case "highlight":
     default:
       span.textContent = textoOriginal;
-      span.title = "Detectado: " + textoOriginal;
       break;
   }
+
   return span;
 }
 
-/* ============================================================
- * Limpieza
- * ============================================================ */
-
-function limpiarMarcas() {
-  const marcas = document.querySelectorAll("." + HATE_MARK_CLASS);
-  marcas.forEach((mark) => {
-    const original = mark.dataset.hateOriginal || mark.textContent || "";
-    mark.replaceWith(document.createTextNode(original));
-  });
-  document.querySelectorAll(`[${HATE_NODE_FLAG}]`).forEach((el) => {
-    el.removeAttribute(HATE_NODE_FLAG);
-  });
-  config.detectados = 0;
-}
-
-/* ============================================================
- * Integración BETO — funciones activas
- * ============================================================ */
-
 function enviarLoteAlModelo(fragmentos) {
-  if (!config.apiHabilitada || !Array.isArray(fragmentos) || !fragmentos.length) return;
+  if (!config.apiHabilitada || !Array.isArray(fragmentos) || fragmentos.length === 0) {
+    return;
+  }
+
+  const ids = fragmentos.map((f) => f.id);
   try {
-    chrome.runtime.sendMessage({ tipo: "PREDICT_BATCH", fragmentos });
-  } catch (_e) { /* sw dormido */ }
+    chrome.runtime.sendMessage({ tipo: "PREDICT_BATCH", fragmentos }, () => {
+      if (chrome.runtime.lastError) {
+        manejarApiNoDisponible({ ids, reason: "service_worker_unavailable" });
+      }
+    });
+  } catch (_e) {
+    manejarApiNoDisponible({ ids, reason: "send_message_failed" });
+  }
 }
 
-/**
- * Aplica la marca visual de BETO (.hate-ml) sobre el elemento DOM
- * referenciado por resultado.id, si la probabilidad supera el umbral.
- */
 function aplicarResultadoML(resultado) {
-  if (!resultado || resultado.etiqueta !== "hate") return;
+  const entry = window.__hateRefs && window.__hateRefs[resultado.id];
+  if (!entry) return;
 
+  config.apiDisponible = true;
+  config.apiFallbackHasta = 0;
+
+  const probabilidad = Number(resultado.probabilidad);
   const umbral = typeof config.umbralMl === "number" ? config.umbralMl : 0.7;
-  if (resultado.probabilidad < umbral) return;
+  const debeMarcar = Number.isFinite(probabilidad)
+    ? probabilidad >= umbral
+    : resultado.etiqueta === "hate";
 
-  const el = window.__hateRefs && window.__hateRefs[resultado.id];
+  if (!debeMarcar) {
+    marcarMlComoRevisado(entry, "checked");
+    delete window.__hateRefs[resultado.id];
+    scheduleScan(120);
+    return;
+  }
+
+  const node = entry.node;
+  const parent = entry.parent;
+  const textoOriginal =
+    node && node.nodeValue !== null ? node.nodeValue : entry.original || entry.texto;
+  const marca = crearMarcaML(textoOriginal, probabilidad, resultado.id, entry.texto);
+
+  let refParent = marca;
+  if (node && node.parentNode && document.contains(node)) {
+    node.parentNode.replaceChild(marca, node);
+    if (parent && parent.setAttribute) {
+      parent.setAttribute(ML_STATE_ATTR, "hit");
+    }
+  } else if (parent && document.contains(parent)) {
+    refParent = parent;
+    parent.classList.add("hate-ml");
+    parent.setAttribute(ML_STATE_ATTR, "hit");
+    parent.title = `BETO API: hate (p=${probabilidad.toFixed(2)})`;
+  }
+
+  window.__hateRefs[resultado.id] = {
+    parent: refParent,
+    texto: entry.texto,
+    original: textoOriginal,
+  };
+
+  config.detectados += 1;
+  enviarStats();
+  scheduleScan(120);
+}
+
+function marcarMlComoRevisado(entry, state) {
+  if (entry && entry.parent && document.contains(entry.parent)) {
+    entry.parent.setAttribute(ML_STATE_ATTR, state);
+    entry.parent.removeAttribute(ML_ID_ATTR);
+  }
+}
+
+function manejarEstadoApi(msg) {
+  const estabaCaida = config.apiDisponible === false;
+  config.apiDisponible = !!msg.ok;
+
+  if (msg.ok) {
+    config.apiFallbackHasta = 0;
+    clearTimeout(apiRetryTimer);
+    if (estabaCaida && config.activo && config.apiHabilitada) {
+      reiniciarEscaneoCompleto();
+      scheduleScan(0);
+    }
+  }
+}
+
+function manejarApiNoDisponible(msg = {}) {
+  const ids = Array.isArray(msg.ids) ? msg.ids : [];
+  config.apiDisponible = false;
+  config.apiFallbackHasta = Date.now() + API_RETRY_MS;
+
+  liberarPendientesMl(ids);
+
+  if (config.activo) {
+    scheduleScan(0);
+    programarReintentoApi();
+  }
+}
+
+function liberarPendientesMl(ids) {
+  if (ids.length === 0) {
+    Object.keys(window.__hateRefs).forEach((id) => {
+      const ref = window.__hateRefs[id];
+      if (!ref || !ref.parent || ref.parent.getAttribute?.(ML_STATE_ATTR) === "pending") {
+        delete window.__hateRefs[id];
+      }
+    });
+    document.querySelectorAll(`[${ML_STATE_ATTR}="pending"]`).forEach((el) => {
+      el.removeAttribute(ML_STATE_ATTR);
+      el.removeAttribute(ML_ID_ATTR);
+    });
+    return;
+  }
+
+  ids.forEach((id) => {
+    const ref = window.__hateRefs[id];
+    if (ref && ref.parent && document.contains(ref.parent)) {
+      ref.parent.removeAttribute(ML_STATE_ATTR);
+      ref.parent.removeAttribute(ML_ID_ATTR);
+    }
+    delete window.__hateRefs[id];
+  });
+}
+
+function programarReintentoApi() {
+  clearTimeout(apiRetryTimer);
+  if (!config.apiHabilitada || !config.activo) return;
+
+  apiRetryTimer = setTimeout(() => {
+    if (!config.apiHabilitada || !config.activo) return;
+    chrome.runtime.sendMessage({ tipo: "PING_API", url: config.apiUrl }, (res) => {
+      if (chrome.runtime.lastError || !res || !res.ok) {
+        config.apiDisponible = false;
+        config.apiFallbackHasta = Date.now() + API_RETRY_MS;
+        programarReintentoApi();
+        return;
+      }
+
+      config.apiDisponible = true;
+      config.apiFallbackHasta = 0;
+      reiniciarEscaneoCompleto();
+      scheduleScan(0);
+    });
+  }, API_RETRY_MS);
+}
+
+function solicitarExplicacion(id, texto) {
+  if (!config.apiHabilitada || !texto) return;
+  try {
+    chrome.runtime.sendMessage({ tipo: "EXPLAIN_REQ", id, texto });
+  } catch (_e) {
+    /* La explicacion no bloquea la censura principal. */
+  }
+}
+
+function aplicarExplicacion(resultado) {
+  if (!resultado || !Array.isArray(resultado.tokens) || !Array.isArray(resultado.pesos)) {
+    return;
+  }
+
+  const ref = window.__hateRefs && window.__hateRefs[resultado.id];
+  const el = ref?.parent || buscarMlMark(resultado.id);
   if (!el || !document.contains(el)) return;
-  if (el.classList.contains("hate-ml")) return; // ya marcado
 
-  el.classList.add("hate-ml");
-  el.dataset.hateMlProb = resultado.probabilidad.toFixed(2);
-  el.title = `BETO: hate (p=${resultado.probabilidad.toFixed(2)}) — ${el.title || ""}`.trim();
+  const original = el.dataset.hateOriginal || el.textContent || "";
+  const tokens = resultado.tokens
+    .map((token, i) => ({
+      token: limpiarTokenExplain(token),
+      peso: Number(resultado.pesos[i] || 0),
+    }))
+    .filter((x) => x.token.length >= 2)
+    .sort((a, b) => Math.abs(b.peso) - Math.abs(a.peso))
+    .slice(0, 8);
 
-  config.detectados++;
+  if (tokens.length === 0 || config.modo !== "highlight") {
+    el.title = `${el.title || ""} | XAI: ${tokens
+      .map((x) => `${x.token}:${x.peso.toFixed(2)}`)
+      .join(", ")}`.trim();
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  let cursor = 0;
+  const lower = original.toLowerCase();
+
+  tokens.forEach(({ token, peso }) => {
+    const idx = lower.indexOf(token.toLowerCase(), cursor);
+    if (idx < 0) return;
+    if (idx > cursor) fragment.appendChild(document.createTextNode(original.slice(cursor, idx)));
+    const span = document.createElement("span");
+    span.className = "hate-explain-token";
+    span.toggleAttribute(peso >= 0 ? "data-shap-positive" : "data-shap-negative", true);
+    span.textContent = original.slice(idx, idx + token.length);
+    fragment.appendChild(span);
+    cursor = idx + token.length;
+  });
+
+  if (cursor < original.length) {
+    fragment.appendChild(document.createTextNode(original.slice(cursor)));
+  }
+
+  if (fragment.childNodes.length > 0) {
+    el.replaceChildren(fragment);
+  }
+}
+
+function limpiarTokenExplain(token) {
+  return String(token || "")
+    .replace(/^#+/, "")
+    .replace(/^##/, "")
+    .replace(/[^\p{L}\p{N}_-]+/gu, "")
+    .trim();
+}
+
+function buscarMlMark(id) {
+  if (!id) return null;
+  const safeId =
+    typeof CSS !== "undefined" && typeof CSS.escape === "function"
+      ? CSS.escape(id)
+      : String(id).replace(/"/g, '\\"');
+  return document.querySelector(`[data-hate-ml-id="${safeId}"]`);
+}
+
+function reiniciarEscaneoCompleto() {
+  limpiarMarcas();
+  limpiarEstadoMl();
+  config.detectados = 0;
   enviarStats();
 }
 
-/**
- * Aplica coloreado de tokens SHAP sobre el elemento DOM (XAI).
- * Los tokens con peso positivo se marcan como .hate-explain-token[data-shap-positive].
- */
-function aplicarExplicacion(resultado) {
-  if (!resultado || !Array.isArray(resultado.tokens) || !Array.isArray(resultado.pesos)) return;
-
-  const el = window.__hateRefs && window.__hateRefs[resultado.id];
-  if (!el || !document.contains(el)) return;
-
-  const texto = el.textContent || "";
-  const maxPeso = Math.max(...resultado.pesos.map(Math.abs), 0.001);
-
-  // Reemplazar tokens con spans coloreados dentro del elemento
-  resultado.tokens.forEach((token, i) => {
-    const peso = resultado.pesos[i] || 0;
-    const intensidad = Math.round((Math.abs(peso) / maxPeso) * 100);
-    if (Math.abs(peso) < 0.05 * maxPeso) return; // ignorar tokens poco relevantes
-
-    const regex = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-    el.innerHTML = el.innerHTML.replace(regex, (match) => {
-      const attr = peso > 0 ? "data-shap-positive" : "data-shap-negative";
-      return `<span class="hate-explain-token" ${attr} style="opacity:${0.4 + intensidad / 160}">${match}</span>`;
-    });
+function limpiarMarcas() {
+  document.querySelectorAll(`.${HATE_MARK_CLASS}`).forEach((mark) => {
+    const original = mark.dataset.hateOriginal || mark.textContent || "";
+    mark.replaceWith(document.createTextNode(original));
   });
+
+  document.querySelectorAll(`[${HATE_NODE_FLAG}]`).forEach((el) => {
+    el.removeAttribute(HATE_NODE_FLAG);
+  });
+
+  if (document.body && typeof document.body.normalize === "function") {
+    document.body.normalize();
+  }
 }
 
-/* ============================================================
- * Reporte de estadísticas
- * ============================================================ */
+function limpiarEstadoMl() {
+  document.querySelectorAll(`[${ML_STATE_ATTR}], [${ML_ID_ATTR}], .hate-ml`).forEach((el) => {
+    el.removeAttribute(ML_STATE_ATTR);
+    el.removeAttribute(ML_ID_ATTR);
+    el.classList.remove("hate-ml");
+  });
+  window.__hateRefs = {};
+}
 
 function enviarStats() {
   try {
@@ -459,8 +758,9 @@ function enviarStats() {
       tipo: "STATS_UPDATE",
       detectados: config.detectados,
       url: location.href,
+      ruta: rutaActiva(),
     });
   } catch (_e) {
-    // ignorar si el service worker no está activo
+    /* El service worker puede estar dormido. */
   }
 }

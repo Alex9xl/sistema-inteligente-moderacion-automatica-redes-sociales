@@ -7,7 +7,7 @@
  *   - Importar y exportar JSON (respaldo local)
  *   - Restaurar lista por defecto (vacía la personal)
  *   - Cambiar modo de censura, activar/desactivar diccionario base
- *   - Configurar URL del backend (futura integración con BETO)
+ *   - Configurar API BETO principal, umbral y URL del backend local
  */
 
 const MAX_TERMINOS = 200;
@@ -29,7 +29,12 @@ const els = {
   settingLexiconBase: document.getElementById("settingLexiconBase"),
   selectModo: document.getElementById("selectModo"),
   settingApi: document.getElementById("settingApi"),
+  inputUmbral: document.getElementById("inputUmbral"),
+  umbralValue: document.getElementById("umbralValue"),
   inputApiUrl: document.getElementById("inputApiUrl"),
+  apiStatusDot: document.getElementById("apiStatusDot"),
+  apiStatusText: document.getElementById("apiStatusText"),
+  btnPingApi: document.getElementById("btnPingApi"),
   toast: document.getElementById("toast"),
 };
 
@@ -49,6 +54,7 @@ async function init() {
     "lexiconActivo",
     "modoCensura",
     "apiHabilitada",
+    "umbralMl",
     "apiUrl",
   ]);
 
@@ -58,12 +64,15 @@ async function init() {
   els.settingDeteccion.checked = !!stored.deteccionActiva;
   els.settingLexiconBase.checked = stored.lexiconActivo !== false;
   els.selectModo.value = stored.modoCensura || "highlight";
-  els.settingApi.checked = !!stored.apiHabilitada;
+  els.settingApi.checked = stored.apiHabilitada !== false;
+  els.inputUmbral.value = stored.umbralMl ?? 0.7;
+  els.umbralValue.textContent = Number(stored.umbralMl ?? 0.7).toFixed(2);
   els.inputApiUrl.value = stored.apiUrl || "http://127.0.0.1:8000";
 
   renderLista();
   renderCategorias();
   bindEventos();
+  pingApi();
 }
 
 function bindEventos() {
@@ -91,14 +100,23 @@ function bindEventos() {
   els.selectModo.addEventListener("change", () =>
     chrome.storage.local.set({ modoCensura: els.selectModo.value })
   );
-  els.settingApi.addEventListener("change", () =>
-    chrome.storage.local.set({ apiHabilitada: els.settingApi.checked })
-  );
-  els.inputApiUrl.addEventListener("change", () => {
-    const url = (els.inputApiUrl.value || "").trim();
-    chrome.storage.local.set({ apiUrl: url || "http://127.0.0.1:8000" });
-    toast("URL del backend actualizada", "success");
+  els.settingApi.addEventListener("change", async () => {
+    await chrome.storage.local.set({ apiHabilitada: els.settingApi.checked });
+    pingApi();
   });
+  els.inputUmbral.addEventListener("input", () => {
+    const value = Number(els.inputUmbral.value);
+    els.umbralValue.textContent = value.toFixed(2);
+    chrome.storage.local.set({ umbralMl: value });
+  });
+  els.inputApiUrl.addEventListener("change", () => {
+    const url = normalizarApiUrl(els.inputApiUrl.value);
+    els.inputApiUrl.value = url;
+    chrome.storage.local.set({ apiUrl: url });
+    toast("URL del backend actualizada", "success");
+    pingApi();
+  });
+  els.btnPingApi.addEventListener("click", pingApi);
 
   // Reaccionar a cambios externos
   chrome.storage.onChanged.addListener((changes) => {
@@ -113,6 +131,14 @@ function bindEventos() {
         changes.lexiconActivo.newValue !== false;
     if (changes.modoCensura)
       els.selectModo.value = changes.modoCensura.newValue || "highlight";
+    if (changes.apiHabilitada)
+      els.settingApi.checked = changes.apiHabilitada.newValue !== false;
+    if (changes.umbralMl) {
+      const value = Number(changes.umbralMl.newValue ?? 0.7);
+      els.inputUmbral.value = value;
+      els.umbralValue.textContent = value.toFixed(2);
+    }
+    if (changes.apiUrl) els.inputApiUrl.value = changes.apiUrl.newValue;
   });
 }
 
@@ -307,6 +333,50 @@ function renderCategorias() {
   }
   els.defaultCategories.innerHTML = "";
   els.defaultCategories.appendChild(frag);
+}
+
+/* ============================================================
+ * Backend API
+ * ============================================================ */
+
+function normalizarApiUrl(raw) {
+  const value = String(raw || "").trim().replace(/\/+$/, "");
+  if (!value) return "http://127.0.0.1:8000";
+  if (!/^https?:\/\//i.test(value)) return "http://" + value;
+  return value;
+}
+
+function pingApi() {
+  const apiHabilitada = els.settingApi.checked;
+  const url = normalizarApiUrl(els.inputApiUrl.value);
+
+  els.apiStatusDot.classList.remove("is-on", "is-error", "is-warn");
+
+  if (!apiHabilitada) {
+    els.apiStatusDot.classList.add("is-warn");
+    els.apiStatusText.textContent = "API desactivada; se usará el lexicón";
+    return;
+  }
+
+  els.apiStatusText.textContent = "Comprobando modelo...";
+  chrome.runtime.sendMessage({ tipo: "PING_API", url }, (res) => {
+    if (chrome.runtime.lastError || !res) {
+      els.apiStatusDot.classList.add("is-error");
+      els.apiStatusText.textContent = "API sin conexión";
+      return;
+    }
+
+    if (res.ok) {
+      els.apiStatusDot.classList.add("is-on");
+      els.apiStatusText.textContent = "API BETO lista";
+    } else if (res.reason === "model_not_loaded") {
+      els.apiStatusDot.classList.add("is-error");
+      els.apiStatusText.textContent = "API activa, modelo no cargado";
+    } else {
+      els.apiStatusDot.classList.add("is-error");
+      els.apiStatusText.textContent = "API sin conexión";
+    }
+  });
 }
 
 /* ============================================================

@@ -1,53 +1,40 @@
-# Detector de Discurso de Odio (ES) — Extensión
+# Detector de Discurso de Odio (ES) - Extension
 
-Beta funcional (v0.9.0) de la extensión de navegador del proyecto de tesis.
+Version 1.0 de la extension de navegador del proyecto de tesis.
 
-> Modo prototipo: detección 100% local con un **lexicón** de términos en
-> español (neutro + LATAM). La integración con el modelo BETO ajustado vía
-> API local (FastAPI) está reservada para cuando el modelo esté disponible.
+El motor principal es la API local de BETO (`http://127.0.0.1:8000`). El
+lexicon local queda como respaldo: se usa cuando la API esta desactivada, no
+tiene el modelo cargado o no responde.
 
-## Características
+## Caracteristicas
 
-- Detección automática en cualquier página web (Manifest V3).
-- 4 modos de censura: **Resaltar**, **Difuminar**, **Asteriscos**, **Ocultar**.
-- Lexicón base con ~80 términos repartidos en 4 categorías.
-- Lexicón personal del usuario (CRUD, búsqueda, importar/exportar JSON).
-- Estadísticas: detecciones por página, total acumulado, cantidad de palabras propias.
-- Privacidad: el lexicón personal vive sólo en `chrome.storage.local`.
-- UI moderna en tema violeta con glassmorphism.
+- Deteccion automatica en paginas web compatibles con content scripts.
+- API BETO prioritaria con verificacion de `/health` y `model_loaded`.
+- Respaldo por lexicon local y lexicon personal del usuario.
+- 4 modos de censura: Resaltar, Difuminar, Asteriscos y Ocultar.
+- Umbral configurable para la probabilidad BETO.
+- Estadisticas por pagina y total acumulado.
+- Privacidad: el lexicon personal vive en `chrome.storage.local`; la API local
+  recibe solo fragmentos visibles cuando esta habilitada.
 
-## Estructura
-
-```
-extension/
-├── manifest.json
-├── lexicon.js
-├── content.js
-├── background.js
-├── styles.css
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── options/
-│   ├── options.html
-│   ├── options.css
-│   └── options.js
-├── icons/
-│   ├── icon16.png  icon32.png  icon48.png  icon128.png
-│   └── generate_icons.py
-└── test/
-    └── demo.html       (página de prueba local)
-```
-
-## Instalación rápida
-
-Ver `documentos_extras/guia-extension.md` para la guía paso a paso.
+## Flujo
 
 ```text
-1. Abre chrome://extensions  (o edge://extensions)
-2. Activa "Modo de desarrollador"
-3. Pulsa "Cargar descomprimida" y selecciona la carpeta extension/
-4. Abre el popup, activa la detección
-5. Abre extension/test/demo.html para probar
+Deteccion activa
+  -> API BETO habilitada y modelo cargado
+      -> POST /predict
+      -> censura con el modo elegido si probabilidad >= umbral
+  -> API desactivada/caida/sin modelo
+      -> lexicon local de respaldo
+```
+
+## Instalacion rapida
+
+```text
+1. Abre chrome://extensions o edge://extensions.
+2. Activa "Modo de desarrollador".
+3. Pulsa "Cargar descomprimida" y selecciona la carpeta extension/.
+4. Levanta el backend: uvicorn src.api.main:app --host 127.0.0.1 --port 8000.
+5. Activa la deteccion en el popup y verifica "API BETO lista".
+6. Abre extension/test/demo.html para probar.
 ```

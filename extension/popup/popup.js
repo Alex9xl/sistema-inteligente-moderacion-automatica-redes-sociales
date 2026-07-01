@@ -1,5 +1,5 @@
 /**
- * Popup logic - sincroniza la UI con chrome.storage y la pestaña activa.
+ * Popup logic - sincroniza UI, storage y pestana activa.
  */
 
 const els = {
@@ -10,6 +10,7 @@ const els = {
   statusSub: document.getElementById("statusSub"),
   modeGrid: document.getElementById("modeGrid"),
   toggleLexiconBase: document.getElementById("toggleLexiconBase"),
+  toggleApiPrincipal: document.getElementById("toggleApiPrincipal"),
   apiDot: document.getElementById("apiDot"),
   apiText: document.getElementById("apiText"),
   btnPingApi: document.getElementById("btnPingApi"),
@@ -38,41 +39,40 @@ async function init() {
     modoCensura: stored.modoCensura || "highlight",
     lexiconActivo: stored.lexiconActivo !== false,
     palabrasUsuario: stored.palabrasUsuario || [],
-    apiHabilitada: !!stored.apiHabilitada,
+    apiHabilitada: stored.apiHabilitada !== false,
     apiUrl: stored.apiUrl || "http://127.0.0.1:8000",
     estadisticas: stored.estadisticas || { totalDetectados: 0 },
   };
 
   pintarEstado(cfg);
-  bindEventos(cfg);
-  pingApi(cfg.apiUrl);
+  bindEventos();
+  await pingApi(cfg.apiUrl, cfg.apiHabilitada);
   refrescarStatsPagina();
 }
-
-/* ============================================================
- * Pintar estado en la UI
- * ============================================================ */
 
 function pintarEstado(cfg) {
   els.toggleDeteccion.checked = cfg.deteccionActiva;
   els.toggleLexiconBase.checked = cfg.lexiconActivo;
-  setEstado(cfg.deteccionActiva);
+  els.toggleApiPrincipal.checked = cfg.apiHabilitada;
+  setEstado(cfg);
   setModo(cfg.modoCensura);
-  els.statTotal.textContent = formatNumber(
-    cfg.estadisticas.totalDetectados || 0
-  );
+  els.statTotal.textContent = formatNumber(cfg.estadisticas.totalDetectados || 0);
   els.statPalabras.textContent = (cfg.palabrasUsuario || []).length;
 }
 
-function setEstado(activo) {
+function setEstado(cfg) {
+  const activo = !!cfg.deteccionActiva;
   els.statusCard.classList.toggle("is-on", activo);
   els.statusDot.classList.toggle("is-on", activo);
-  els.statusTitle.textContent = activo
-    ? "Detección activa"
-    : "Detección desactivada";
-  els.statusSub.textContent = activo
-    ? "Escaneando contenido visible…"
-    : "Activa el interruptor para empezar";
+  els.statusTitle.textContent = activo ? "Detección activa" : "Detección desactivada";
+
+  if (!activo) {
+    els.statusSub.textContent = "Activa el interruptor para empezar";
+  } else if (cfg.apiHabilitada) {
+    els.statusSub.textContent = "API BETO prioritaria";
+  } else {
+    els.statusSub.textContent = "Modo lexicón de respaldo";
+  }
 }
 
 function setModo(modo) {
@@ -81,18 +81,22 @@ function setModo(modo) {
   });
 }
 
-/* ============================================================
- * Eventos
- * ============================================================ */
-
-function bindEventos(cfg) {
+function bindEventos() {
   els.toggleDeteccion.addEventListener("change", async () => {
     const activo = els.toggleDeteccion.checked;
+    const stored = await chrome.storage.local.get(["apiHabilitada"]);
     await chrome.storage.local.set({ deteccionActiva: activo });
-    setEstado(activo);
-    if (activo) {
-      pedirEscaneo();
-    }
+    setEstado({ deteccionActiva: activo, apiHabilitada: stored.apiHabilitada !== false });
+    if (activo) pedirEscaneo();
+  });
+
+  els.toggleApiPrincipal.addEventListener("change", async () => {
+    const apiHabilitada = els.toggleApiPrincipal.checked;
+    await chrome.storage.local.set({ apiHabilitada });
+    const stored = await chrome.storage.local.get(["deteccionActiva", "apiUrl"]);
+    setEstado({ deteccionActiva: !!stored.deteccionActiva, apiHabilitada });
+    await pingApi(stored.apiUrl || "http://127.0.0.1:8000", apiHabilitada);
+    pedirEscaneo();
   });
 
   els.toggleLexiconBase.addEventListener("change", async () => {
@@ -120,41 +124,38 @@ function bindEventos(cfg) {
     chrome.runtime.openOptionsPage();
   });
 
-  els.btnPingApi.addEventListener("click", () => {
-    chrome.storage.local.get(["apiUrl"], (s) => {
-      pingApi(s.apiUrl || "http://127.0.0.1:8000");
-    });
+  els.btnPingApi.addEventListener("click", async () => {
+    const s = await chrome.storage.local.get(["apiUrl", "apiHabilitada"]);
+    pingApi(s.apiUrl || "http://127.0.0.1:8000", s.apiHabilitada !== false);
   });
 
-  // Reaccionar a cambios externos
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.estadisticas) {
       const v = changes.estadisticas.newValue || {};
       els.statTotal.textContent = formatNumber(v.totalDetectados || 0);
     }
     if (changes.palabrasUsuario) {
-      els.statPalabras.textContent = (changes.palabrasUsuario.newValue || [])
-        .length;
+      els.statPalabras.textContent = (changes.palabrasUsuario.newValue || []).length;
+    }
+    if (changes.apiHabilitada) {
+      els.toggleApiPrincipal.checked = changes.apiHabilitada.newValue !== false;
+    }
+    if (changes.lexiconActivo) {
+      els.toggleLexiconBase.checked = changes.lexiconActivo.newValue !== false;
     }
   });
 }
-
-/* ============================================================
- * Comunicación con la pestaña activa
- * ============================================================ */
 
 async function pedirEscaneo() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || !tab.id || !esUrlInyectable(tab.url)) return;
     chrome.tabs.sendMessage(tab.id, { tipo: "RESCAN" }, () => {
-      // Silenciar lastError cuando la pestaña no tiene content script
-      // (chrome://, edge://, páginas de la store, etc.)
       void chrome.runtime.lastError;
-      setTimeout(refrescarStatsPagina, 600);
+      setTimeout(refrescarStatsPagina, 700);
     });
   } catch (_e) {
-    /* sin pestaña activa, nada que hacer */
+    /* sin pestana activa */
   }
 }
 
@@ -182,32 +183,39 @@ async function refrescarStatsPagina() {
   }
 }
 
-/* ============================================================
- * Estado de la API (futura)
- * ============================================================ */
+function pingApi(url, apiHabilitada = true) {
+  els.apiDot.classList.remove("is-on", "is-error", "is-warn");
 
-function pingApi(url) {
-  els.apiDot.classList.remove("is-on", "is-error");
-  els.apiText.textContent = "Comprobando…";
-  chrome.runtime.sendMessage({ tipo: "PING_API", url }, (res) => {
-    if (chrome.runtime.lastError || !res) {
-      els.apiDot.classList.add("is-error");
-      els.apiText.textContent = "Sin conexión (modo lexicón)";
-      return;
-    }
-    if (res.ok) {
-      els.apiDot.classList.add("is-on");
-      els.apiText.textContent = "Backend disponible";
-    } else {
-      els.apiDot.classList.add("is-error");
-      els.apiText.textContent = "Sin conexión (modo lexicón)";
-    }
+  if (!apiHabilitada) {
+    els.apiDot.classList.add("is-warn");
+    els.apiText.textContent = "API desactivada; usando lexicón";
+    return Promise.resolve();
+  }
+
+  els.apiText.textContent = "Comprobando modelo...";
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ tipo: "PING_API", url }, (res) => {
+      if (chrome.runtime.lastError || !res) {
+        els.apiDot.classList.add("is-error");
+        els.apiText.textContent = "API sin conexión; respaldo local";
+        resolve();
+        return;
+      }
+
+      if (res.ok) {
+        els.apiDot.classList.add("is-on");
+        els.apiText.textContent = "API BETO lista";
+      } else if (res.reason === "model_not_loaded") {
+        els.apiDot.classList.add("is-error");
+        els.apiText.textContent = "API sin modelo cargado";
+      } else {
+        els.apiDot.classList.add("is-error");
+        els.apiText.textContent = "API sin conexión; respaldo local";
+      }
+      resolve();
+    });
   });
 }
-
-/* ============================================================
- * Utilidades
- * ============================================================ */
 
 function formatNumber(n) {
   if (n < 1000) return String(n);

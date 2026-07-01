@@ -20,7 +20,7 @@
           </div>
           <div>
             <h1>Detector ES</h1>
-            <p class="brand-sub">Configuración del lexicón personal · v0.9.0-beta</p>
+            <p class="brand-sub">API BETO principal + lexicón de respaldo · v1.0</p>
           </div>
         </div>
         <div class="header-actions">
@@ -93,8 +93,8 @@
           <div class="panel">
             <h2>Diccionario base</h2>
             <p class="muted">
-              Categorías incluidas en la beta. Puedes desactivarlo desde el popup
-              si quieres usar solo tu lista personal.
+              Categorías incluidas en el respaldo local. Puedes desactivarlo
+              desde el popup si quieres usar solo tu lista personal.
             </p>
             <div id="defaultCategories" class="categories">
               <!-- Se rellena dinámicamente -->
@@ -143,20 +143,37 @@
           </div>
 
           <div class="panel">
-            <h2>Backend BETO (opcional)</h2>
+            <h2>Backend BETO principal</h2>
             <p class="muted">
-              Cuando el modelo BETO ajustado esté disponible, podrás conectarte
-              al backend local para mejorar la detección con contexto.
+              La detección contextual usa primero la API local. Si la API está
+              apagada, caída o sin modelo cargado, se aplica el lexicón local.
             </p>
             <div class="setting">
               <div>
-                <strong>Habilitar API</strong>
-                <p>Reservado para integración futura.</p>
+                <strong>Usar API BETO</strong>
+                <p>Motor prioritario de la extensión.</p>
               </div>
               <label class="switch">
                 <input type="checkbox" id="settingApi" />
                 <span class="slider"></span>
               </label>
+            </div>
+            <div class="setting">
+              <div>
+                <strong>Umbral BETO</strong>
+                <p>Probabilidad mínima para censurar con la API.</p>
+              </div>
+              <div class="range-control">
+                <span id="umbralValue">0.70</span>
+                <input
+                  type="range"
+                  id="inputUmbral"
+                  min="0.5"
+                  max="0.95"
+                  step="0.05"
+                  value="0.7"
+                />
+              </div>
             </div>
             <div class="api-url">
               <label for="inputApiUrl">URL del backend</label>
@@ -166,14 +183,21 @@
                 placeholder="http://127.0.0.1:8000"
               />
             </div>
+            <div class="api-health">
+              <span id="apiStatusDot" class="status-dot small"></span>
+              <span id="apiStatusText">Sin comprobar</span>
+              <button id="btnPingApi" class="btn btn-ghost btn-mini" type="button">
+                Probar
+              </button>
+            </div>
           </div>
 
           <div class="panel privacy-panel">
             <h2>🔒 Privacidad</h2>
             <p class="muted">
-              Tu lexicón personal se guarda solo en este navegador
-              (<code>chrome.storage.local</code>) y nunca se envía a ningún
-              servidor. Puedes exportarlo o borrarlo en cualquier momento.
+              El backend local recibe fragmentos visibles cuando la API está
+              activa. Tu lexicón personal permanece en
+              <code>chrome.storage.local</code> y no se envía al backend.
             </p>
           </div>
         </aside>
