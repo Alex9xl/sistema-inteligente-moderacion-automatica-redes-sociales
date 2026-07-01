@@ -27,7 +27,7 @@ def test_content_script_uses_api_before_lexicon_fallback() -> None:
     content = read_text(EXTENSION / "content.js")
 
     assert "function debeUsarApi" in content
-    assert "const fragmentos = recolectarFragmentosML();" in content
+    assert "fragmentos = recolectarFragmentosML();" in content
     assert "escanearLexicon();" in content
     assert "API_UNAVAILABLE" in content
     assert "if (!config.activo || !regexActiva) return" not in content
@@ -59,6 +59,7 @@ def test_ui_copy_declares_api_as_primary_engine() -> None:
 
     assert "Motor principal" in popup
     assert "API BETO local" in popup
-    assert "Backend BETO principal" in options
+    assert "API BETO Local" in options
+    assert "Motor Principal" in options
     assert "El motor principal es la API local de BETO" in readme
     assert "Backend BETO (opcional)" not in options

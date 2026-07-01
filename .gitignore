@@ -42,6 +42,9 @@ data/interim/
 models/*/
 !models/.gitkeep
 !models/README.md
+!models/beto_finetuned_final/
+models/beto_finetuned_final/*
+!models/beto_finetuned_final/model_card.md
 
 reports/logs/
 

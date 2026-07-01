@@ -1,59 +1,154 @@
 {
+  "project": {
+    "name": "Sistema Inteligente de Moderacion Automatica en Redes Sociales",
+    "version": "1.0",
+    "created_at": "2026-07-01",
+    "git_head_at_manifest_creation": "a73af1b6a958672453f5486eab73d640d420c0db",
+    "freeze_note": "Ejecutar commit y tag v1.0 despues de revisar este manifiesto."
+  },
+  "environment_checked": {
+    "os": "Windows",
+    "python": "3.14.1",
+    "torch": "2.12.0+cpu",
+    "transformers": "4.57.6",
+    "pandas": "3.0.3",
+    "note": "Entorno local de verificacion. El entrenamiento se realizo previamente en GPU/Colab segun bitacora."
+  },
   "corpus": {
     "version": 1,
-    "file": "corpus_v1_enriquecido.parquet",
+    "file": "data/processed/corpus_v1_enriquecido.parquet",
     "sha256": "4a76b4005244ce454a08dc2c1580807bc2876e911f236e2ad2bc779e799c9c3c",
-    "git_commit": "06882c7a90c6a2aa1774cbd1c1790d5c707e1b4f",
-    "created_at": "2026-06-24T15:56:10Z",
     "datasets_origen": [
       "spanish-hate-speech-superset-v2024",
       "detoxis-2021"
     ],
-    "lexicon_version": "modismos_latam_v1.csv",
-    "n_total": 33318,
-    "n_hate": 7603,
-    "n_no_hate": 25715,
-    "nota": "33,318 filas antes de deduplicación. Tras eliminar 331 duplicados quedan 32,987 filas distribuidas en los splits train/val/test."
-  },
-  "splits": {
+    "n_total_before_deduplication": 33318,
+    "n_hate_before_deduplication": 7603,
+    "n_no_hate_before_deduplication": 25715,
     "deduplication": {
       "duplicados_exactos_eliminados": 217,
       "duplicados_normalizados_eliminados": 114,
       "total_eliminados": 331,
       "corpus_limpio": 32987
-    },
+    }
+  },
+  "lexicon_latam": {
+    "file": "data/lexicons/modismos_latam_v1.csv",
+    "sha256": "3402e01cd60547ac0df981d3f72f0be02abf4d2fc3abc13cd955a729546d7dee",
+    "canonical_terms": 383,
+    "effective_tokens_including_variants": 886,
+    "role": "observacional; usado para tiene_modismo y analisis H3, no como feature del modelo"
+  },
+  "splits": {
     "train": {
-      "file": "train.parquet",
+      "file": "data/processed/train.parquet",
       "sha256": "24150e7edac3bcbf167c6183941997e936acdf1f14f425be95545b5ad7db7fc8",
       "n_filas": 23090,
       "proporcion": "70%",
       "pct_hate": "22.8%"
     },
     "val": {
-      "file": "val.parquet",
+      "file": "data/processed/val.parquet",
       "sha256": "99445ea7397cdbe36d6fa4dae31a7bb479523b05417157df1b4864a303853cfc",
       "n_filas": 4948,
       "proporcion": "15%",
       "pct_hate": "22.8%"
     },
     "test": {
-      "file": "test.parquet",
+      "file": "data/processed/test.parquet",
       "sha256": "f07165adca005065e9a9e65f6385a8670fe61edfe3d23ecca700278c0fbaa59b",
       "n_filas": 4949,
       "proporcion": "15%",
       "pct_hate": "22.8%"
+    },
+    "leakage_check": {
+      "train_val": 0,
+      "train_test": 0,
+      "val_test": 0
     }
   },
-  "leakage_check": {
-    "train_val": 0,
-    "train_test": 0,
-    "val_test": 0
+  "models": {
+    "beto_finetuned_final": {
+      "directory": "models/beto_finetuned_final",
+      "base_model": "dccuchile/bert-base-spanish-wwm-cased",
+      "selected_seed": 123,
+      "selection_metric": "highest F1 hate among BETO seeds",
+      "model_file": "models/beto_finetuned_final/model.safetensors",
+      "model_sha256": "c9409f7a28183aa4f9fbadd94dc189d0b15ed47b84b08cb9aa83f2c4ce08e168",
+      "directory_size_bytes": 440412980,
+      "model_card": "models/beto_finetuned_final/model_card.md",
+      "model_card_sha256": "d5954e2228c65d115603d4509cc250451657def04c91ff0d7f39d97449115e6d"
+    },
+    "trained_directories": [
+      "models/beto_finetuned_42",
+      "models/beto_finetuned_123",
+      "models/beto_finetuned_2024",
+      "models/mbert_finetuned_42",
+      "models/mbert_finetuned_123",
+      "models/mbert_finetuned_2024",
+      "models/xlmr_finetuned_42",
+      "models/xlmr_finetuned_123",
+      "models/xlmr_finetuned_2024"
+    ]
   },
-  "pipeline": {
-    "clean_py": "src/data/clean.py",
-    "unify_py": "src/data/unify.py",
-    "enrich_py": "src/data/enrich.py",
-    "qc_py": "src/data/qc.py",
-    "split_py": "src/data/split.py"
+  "evaluation": {
+    "metrics_all_models": {
+      "file": "reports/tables/metrics_all_models.csv",
+      "sha256": "e3626891f6aa720db15428096d5f3268ca5fe8519d2aed9088ed1e2df34d6a68"
+    },
+    "comparativa_global": {
+      "file": "reports/tables/comparativa_global.csv",
+      "sha256": "29043187b43bc049194ee7e243d37482b52f02b9bbb991cab1d5c015490733a1"
+    },
+    "bootstrap_ic": {
+      "file": "reports/tables/bootstrap_ic.csv",
+      "sha256": "043924c553c93b0be479e1995b84446fd5efed21f12ac87be9c1f577cde24351"
+    },
+    "mcnemar": {
+      "file": "reports/tables/mcnemar_results.csv",
+      "sha256": "af3e00d1327ea9f1fa8968f527239b20fd518de5435985b5cc1b9cf2e37365f3"
+    },
+    "h3_validation": {
+      "file": "reports/tables/h3_idiom_analysis/h3_hypothesis_validation.csv",
+      "sha256": "3662c0ffb77ace7d82b90aa7f72a1e1c77444363472d8a187933718bf47c67d7"
+    },
+    "xai_summary": {
+      "file": "reports/tables/xai_analysis/shap_analysis_results.csv",
+      "sha256": "cae73591962481492660beb82bb0135409e37bfdd5f6e715244860729014599e"
+    }
+  },
+  "final_results_summary": {
+    "beto_mean_f1_hate": 0.681,
+    "mbert_mean_f1_hate": 0.6474,
+    "xlmr_mean_f1_hate": 0.6681,
+    "beto_vs_mbert_mcnemar_p_seed_42": 1.7806066110777302e-11,
+    "beto_vs_xlmr_mcnemar_p_seed_42": 0.11740417622087618,
+    "h3_delta_f1_con_vs_sin_modismos": 0.22923933209647496,
+    "h3_p_value_permutation": 0.000999000999000999,
+    "h3_supported": true
+  },
+  "backend": {
+    "source": "src/api",
+    "endpoints": ["/health", "/metadata", "/predict", "/explain"],
+    "local_import_check": "from src.api.main import app -> Hate Speech ES API"
+  },
+  "extension": {
+    "directory": "extension",
+    "manifest_file": "extension/manifest.json",
+    "manifest_sha256": "22937f295d4f44d36dd2c8471e1069f5f84cdaa999dcc8076be80f6dc4713789",
+    "manifest_version": "1.0.0",
+    "behavior": "API BETO local prioritaria; lexicon local como respaldo"
+  },
+  "verification": {
+    "pytest": "15 passed",
+    "node_checks": [
+      "extension/content.js",
+      "extension/background.js",
+      "extension/api.js",
+      "extension/popup/popup.js",
+      "extension/options/options.js",
+      "extension/lexicon.js"
+    ],
+    "git_diff_check": "sin errores; solo avisos CRLF en Windows"
   }
 }
