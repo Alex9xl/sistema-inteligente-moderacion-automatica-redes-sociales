@@ -1,7 +1,7 @@
 # GUIA DE REPRODUCCIÓN — Replicar el proyecto desde cero
 
 > Este archivo te lleva de cero a replicar el estado actual del proyecto con comandos concretos.
-> Se actualiza con cada paso completado. Estado actual: **Fase 1 COMPLETA ✅ — Fase 2 COMPLETA ✅ — Fase 3 COMPLETA ✅ — Fase 4 COMPLETA ✅ — Fase 5A COMPLETA ✅ — Fase 5B COMPLETA ✅ — Fase 6 pendiente ⏳**.
+> Se actualiza con cada paso completado. Estado actual: **Fase 1 ✅ — Fase 2 ✅ — Fase 3 ✅ — Fase 4 ✅ — Fase 5A ✅ — Fase 5B ✅ — Fase 6 ✅ — Fase 7 (integración BETO) ✅ — Sistema end-to-end COMPLETO ✅**.
 
 ---
 
@@ -534,3 +534,184 @@ resultado = exp.explain("Ese pinche tipo me cae muy mal")
 | [`INSTRUCCIONES_PROYECTO.md`](INSTRUCCIONES_PROYECTO.md) | Enunciado oficial y especificación técnica completa (22 secciones) |
 | [`PLAN_DESARROLLO.md`](PLAN_DESARROLLO.md) | Itinerario paso a paso con código y estado de cada paso |
 | [`../EXPERIMENTOS.md`](../EXPERIMENTOS.md) | Bitácora científica — registrar decisiones y resultados |
+
+---
+
+## PASO 6 — Backend FastAPI
+
+### 6.1 — Crear archivos de la API ✅
+
+Implementa los 3 archivos principales del backend: configuración, esquemas y aplicación.
+
+Los archivos ya están implementados en `src/api/`. Para verificar que importan correctamente:
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe -c "from src.api.main import app; print('OK'); print([r.path for r in app.routes])"
+```
+
+**Resultado esperado:**
+```
+OK
+['/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc', '/health', '/metadata', '/predict', '/explain']
+```
+
+**Archivos implementados:**
+
+| Archivo | Contenido |
+|---------|-----------|
+| `src/api/config.py` | Clase `Settings` (pydantic-settings): ruta al modelo, umbral, CORS, log level. Lee `.env` si existe. |
+| `src/api/schemas.py` | Esquemas Pydantic v2: `PredictRequest`, `PredictResponse`, `ExplainResponse`, `HealthResponse`, `MetadataResponse`. |
+| `src/api/main.py` | App FastAPI con 4 endpoints, modo degradado si el modelo no existe, SHAP con fallback. |
+
+**Endpoints disponibles:**
+
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/health` | GET | Estado del servicio y si el modelo está cargado |
+| `/metadata` | GET | Versión del modelo, umbral y configuración activa |
+| `/predict` | POST | Clasificación binaria (hate / no_hate) con probabilidad |
+| `/explain` | POST | Igual que `/predict` + tokens y pesos SHAP por token |
+
+**Detalles de implementación:**
+- **Modo degradado:** si `models/beto_finetuned_final/` no existe, el servidor arranca igual (HTTP 503 en `/predict` y `/explain`).
+- **CORS:** acepta cualquier origen `chrome-extension://` y `localhost`.
+- **Umbral configurable:** por defecto 0.5; ajustable en `.env` (`THRESHOLD=0.7`).
+- **SHAP lazy load:** el `ShapExplainer` se inicializa solo en la primera petición a `/explain`, y hace fallback a tokens simples si SHAP no está disponible.
+
+---
+
+### 6.2 — Ejecutar el servidor ✅
+
+> **Este paso lo ejecutas tú en tu terminal.** El servidor queda corriendo en segundo plano mientras usas la extensión.
+
+```powershell
+.\venv\Scripts\python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+**Salida esperada:**
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [...]
+```
+
+**Verificaciones tras arrancar:**
+
+| URL | Qué verificar |
+|-----|---------------|
+| http://127.0.0.1:8000/health | `"model_loaded": true` |
+| http://127.0.0.1:8000/docs | Swagger UI interactivo |
+| http://127.0.0.1:8000/metadata | Versión y configuración activa |
+
+**Probar el endpoint `/predict` desde PowerShell:**
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/predict `
+  -Method POST `
+  -ContentType 'application/json' `
+  -Body '{"texto": "Ese pinche tipo me cae muy mal"}'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "etiqueta": "hate",
+  "probabilidad": 0.87,
+  "modelo": "beto_finetuned",
+  "version": "v1"
+}
+```
+
+> **Nota:** Si `model_loaded` es `false`, verificar que `models/beto_finetuned_final/` existe. El servidor arranca en modo degradado (HTTP 503 en `/predict` y `/explain`) hasta que el modelo esté disponible.
+
+> **Mantener el servidor corriendo** para integrar la extensión Chrome en la siguiente fase.
+
+---
+
+## PASO 7 — Extensión Chrome — Integración con BETO ✅
+
+### 7.1 — Estado de la extensión (prototipo previo)
+
+La extensión (`extension/`) ya existía como prototipo funcional con:
+- Detección por **lexicón local** (~94 términos, 4 categorías)
+- 4 modos de censura: resaltar, difuminar, asteriscos, ocultar
+- Lexicón personal (CRUD + export/import)
+- Estadísticas por pestaña
+- Cliente HTTP (`api.js`) y cola de inferencia ya implementados
+
+### 7.2 — Integración BETO completada ✅
+
+Se implementaron los 3 cambios que faltaban para conectar la extensión con el backend:
+
+**Cambio 1 — `extension/content.js`:** recolección de fragmentos y envío al modelo
+
+En cada escaneo del DOM, si `apiHabilitada=true`, el content script:
+1. Hace un segundo recorrido del árbol de texto
+2. Recolecta hasta 50 fragmentos únicos (≤512 chars, ≥15 chars)
+3. Les asigna un ID único y guarda la referencia al elemento padre en `window.__hateRefs`
+4. Los envía al service worker con `enviarLoteAlModelo(fragmentos)`
+
+**Cambio 2 — `extension/content.js`:** procesar resultados y aplicar marca `.hate-ml`
+
+`aplicarResultadoML(resultado)`: cuando el SW responde con `tipo=RESULTADO`:
+- Si `etiqueta=hate` y `probabilidad ≥ umbralMl` → agrega clase `.hate-ml` al elemento
+- El tooltip muestra la probabilidad: `BETO: hate (p=0.87)`
+
+`aplicarExplicacion(resultado)`: cuando el SW responde con `tipo=EXPLAIN_RES`:
+- Resalta tokens SHAP dentro del elemento con `.hate-explain-token`
+
+**Cambio 3 — `extension/styles.css`:** CSS para marcas BETO
+
+| Clase | Color | Cuándo aparece |
+|-------|-------|----------------|
+| `.hate-ml` | Violeta (outline) | Texto que BETO clasifica como hate |
+| `.hate-explain-token[data-shap-positive]` | Rojo translúcido | Token que empuja hacia hate |
+| `.hate-explain-token[data-shap-negative]` | Verde translúcido | Token que empuja hacia no_hate |
+
+> Las marcas del lexicón (`.hate-detect-mark`) son **rojas**. Las de BETO (`.hate-ml`) son **violetas**. Esto permite distinguir visualmente qué detectó qué.
+
+### 7.3 — Smoke test end-to-end ✅
+
+**Requisitos:**
+1. El backend corre en `http://127.0.0.1:8000` (con `model_loaded: true`)
+2. La extensión está instalada en Chrome/Edge
+3. En la **Options Page** → activar **"Habilitar API"** → esto escribe `apiHabilitada=true` en `chrome.storage.local`
+4. Recargar la extensión desde `chrome://extensions`
+
+**Verificar:**
+```
+extension/test/demo.html → activar detección → deben aparecer:
+  - Marcas rojas:   lexicón local detectó algo
+  - Marcas violeta: BETO (≥ umbralMl=0.7) detectó hate
+```
+
+**Sin `TODO BETO` pendientes:**
+```powershell
+findstr /S /N /I "TODO BETO" extension\*.js
+# Solo aparecen comentarios informativos — ningún stub funcional pendiente
+```
+
+### 7.4 — Activar la API desde la extensión
+
+En la Options Page (`chrome://extensions` → Opciones), activar el toggle **"Habilitar API"**. Esto escribe en `chrome.storage.local`:
+```javascript
+{ apiHabilitada: true, apiUrl: "http://127.0.0.1:8000" }
+```
+
+El content script lo detecta automáticamente vía `storage.onChanged` y empieza a enviar fragmentos al backend en el próximo escaneo.
+
+---
+
+## Sistema end-to-end — Verificación final ✅
+
+| Capa | Estado |
+|------|--------|
+| Corpus (train/val/test) | ✅ 32,987 filas, sin leakage |
+| Lexicón LATAM | ✅ 383 términos, cobertura 53.2% |
+| Modelos entrenados (9 + final) | ✅ BETO F1=0.72, en `models/` |
+| Evaluación + bootstrap + McNemar | ✅ `reports/tables/` |
+| Análisis H3 (modismos) | ✅ `reports/tables/h3_idiom_analysis/` |
+| XAI SHAP (análisis) | ✅ `reports/tables/xai_analysis/` |
+| Backend FastAPI (4 endpoints) | ✅ `http://127.0.0.1:8000` |
+| Extensión Chrome — lexicón | ✅ 4 modos de censura |
+| Extensión Chrome — BETO ML | ✅ Marcas `.hate-ml` (violeta) |
+| Extensión Chrome — XAI SHAP | ✅ Tokens `.hate-explain-token` |

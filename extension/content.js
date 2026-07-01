@@ -38,11 +38,15 @@ const config = {
   modo: "highlight", // highlight | blur | asterisk | hide
   palabrasUsuarioActivas: true,
   apiHabilitada: false,
+  umbralMl: 0.7,   // Umbral de probabilidad para marcar como hate (sincronizado con storage)
   apiUrl: "http://127.0.0.1:8000",
   lexiconUsuario: [],
   lexiconActivo: true,
   detectados: 0,
 };
+
+// Mapa id → elemento DOM para resolver los resultados del modelo.
+if (!window.__hateRefs) window.__hateRefs = {};
 
 let regexActiva = null;
 let observer = null;
@@ -59,6 +63,8 @@ let debounceTimer = null;
     "palabrasUsuario",
     "lexiconActivo",
     "apiHabilitada",
+    "umbralMl",
+    "apiUrl",
   ]);
 
   config.activo = !!stored.deteccionActiva;
@@ -68,6 +74,8 @@ let debounceTimer = null;
     : [];
   config.lexiconActivo = stored.lexiconActivo !== false;
   config.apiHabilitada = !!stored.apiHabilitada;
+  config.umbralMl = typeof stored.umbralMl === "number" ? stored.umbralMl : 0.7;
+  config.apiUrl = stored.apiUrl || "http://127.0.0.1:8000";
 
   rebuildRegex();
 
@@ -107,6 +115,13 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.apiHabilitada) {
     config.apiHabilitada = !!changes.apiHabilitada.newValue;
   }
+  if (changes.umbralMl) {
+    config.umbralMl = typeof changes.umbralMl.newValue === "number"
+      ? changes.umbralMl.newValue : 0.7;
+  }
+  if (changes.apiUrl) {
+    config.apiUrl = changes.apiUrl.newValue || "http://127.0.0.1:8000";
+  }
 
   if (needRebuild) rebuildRegex();
   if ((needRescan || needRebuild) && config.activo) {
@@ -132,11 +147,16 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
-  /* TODO BETO: cuando el backend esté listo, manejar:
-   *   - msg.tipo === "RESULTADO"   -> aplicarResultadoML(msg)
-   *   - msg.tipo === "EXPLAIN_RES" -> mostrar tooltip con tokens/pesos
-   * (ver `aplicarResultadoML` y `enviarLoteAlModelo` más abajo).
-   */
+  // ── Resultado de inferencia BETO ──────────────────────────────
+  if (msg && msg.tipo === "RESULTADO") {
+    aplicarResultadoML(msg);
+    return false;
+  }
+  // ── Explicación SHAP (XAI) ────────────────────────────────────
+  if (msg && msg.tipo === "EXPLAIN_RES") {
+    aplicarExplicacion(msg);
+    return false;
+  }
 });
 
 /* ============================================================
@@ -247,6 +267,48 @@ function escanear() {
     config.detectados += nuevasDetecciones;
     enviarStats();
   }
+
+  // ── Integración BETO: recolectar fragmentos y enviar al modelo ──
+  if (config.apiHabilitada) {
+    const ML_SENT_ATTR = "data-hate-ml-id";
+    const fragmentos = [];
+
+    const walker2 = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const p = node.parentElement;
+          if (!p) return NodeFilter.FILTER_REJECT;
+          const tag = p.tagName;
+          if (["SCRIPT","STYLE","NOSCRIPT","TEXTAREA","INPUT"].includes(tag))
+            return NodeFilter.FILTER_REJECT;
+          if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
+          if (p.closest(".hate-ml")) return NodeFilter.FILTER_REJECT;
+          if (p.hasAttribute(ML_SENT_ATTR)) return NodeFilter.FILTER_REJECT;
+          const text = (node.nodeValue || "").trim();
+          if (text.length < 15) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      }
+    );
+
+    let wn;
+    while ((wn = walker2.nextNode()) && fragmentos.length < 50) {
+      const texto = wn.nodeValue.trim().slice(0, 512);
+      const id = "ml_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const parent = wn.parentElement;
+      if (parent) {
+        parent.setAttribute(ML_SENT_ATTR, id);
+        window.__hateRefs[id] = parent;
+        fragmentos.push({ id, texto });
+      }
+    }
+
+    if (fragmentos.length > 0) {
+      enviarLoteAlModelo(fragmentos);
+    }
+  }
 }
 
 function procesarNodoTexto(textNode) {
@@ -328,20 +390,9 @@ function limpiarMarcas() {
 }
 
 /* ============================================================
- * TODO BETO  ·  Stubs de integración con el modelo
- * ============================================================
- * Estas funciones quedan listas pero NO se invocan en la beta.
- * Para activarlas:
- *   1) En `escanear()`, después de marcar coincidencias del lexicón,
- *      acumular los textos de los nodos visibles en un arreglo
- *      { id, texto } y llamar `enviarLoteAlModelo(...)`.
- *   2) Implementar `aplicarResultadoML(...)` para envolver el nodo
- *      en un `<mark class="hate-ml">` cuando probabilidad >= umbralMl.
- *   3) Añadir las clases CSS .hate-ml y .hate-explain-token a styles.css
- *      (ver INSTRUCCIONES_PROYECTO.md §15.10).
- */
+ * Integración BETO — funciones activas
+ * ============================================================ */
 
-// eslint-disable-next-line no-unused-vars
 function enviarLoteAlModelo(fragmentos) {
   if (!config.apiHabilitada || !Array.isArray(fragmentos) || !fragmentos.length) return;
   try {
@@ -349,11 +400,53 @@ function enviarLoteAlModelo(fragmentos) {
   } catch (_e) { /* sw dormido */ }
 }
 
-// eslint-disable-next-line no-unused-vars
-function aplicarResultadoML(_resultado) {
-  // TODO BETO: localizar el nodo por id (window.__hateRefs[_resultado.id])
-  //           y, si _resultado.probabilidad >= umbralMl, envolverlo en
-  //           <mark class="hate-ml" title="p=...">.
+/**
+ * Aplica la marca visual de BETO (.hate-ml) sobre el elemento DOM
+ * referenciado por resultado.id, si la probabilidad supera el umbral.
+ */
+function aplicarResultadoML(resultado) {
+  if (!resultado || resultado.etiqueta !== "hate") return;
+
+  const umbral = typeof config.umbralMl === "number" ? config.umbralMl : 0.7;
+  if (resultado.probabilidad < umbral) return;
+
+  const el = window.__hateRefs && window.__hateRefs[resultado.id];
+  if (!el || !document.contains(el)) return;
+  if (el.classList.contains("hate-ml")) return; // ya marcado
+
+  el.classList.add("hate-ml");
+  el.dataset.hateMlProb = resultado.probabilidad.toFixed(2);
+  el.title = `BETO: hate (p=${resultado.probabilidad.toFixed(2)}) — ${el.title || ""}`.trim();
+
+  config.detectados++;
+  enviarStats();
+}
+
+/**
+ * Aplica coloreado de tokens SHAP sobre el elemento DOM (XAI).
+ * Los tokens con peso positivo se marcan como .hate-explain-token[data-shap-positive].
+ */
+function aplicarExplicacion(resultado) {
+  if (!resultado || !Array.isArray(resultado.tokens) || !Array.isArray(resultado.pesos)) return;
+
+  const el = window.__hateRefs && window.__hateRefs[resultado.id];
+  if (!el || !document.contains(el)) return;
+
+  const texto = el.textContent || "";
+  const maxPeso = Math.max(...resultado.pesos.map(Math.abs), 0.001);
+
+  // Reemplazar tokens con spans coloreados dentro del elemento
+  resultado.tokens.forEach((token, i) => {
+    const peso = resultado.pesos[i] || 0;
+    const intensidad = Math.round((Math.abs(peso) / maxPeso) * 100);
+    if (Math.abs(peso) < 0.05 * maxPeso) return; // ignorar tokens poco relevantes
+
+    const regex = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    el.innerHTML = el.innerHTML.replace(regex, (match) => {
+      const attr = peso > 0 ? "data-shap-positive" : "data-shap-negative";
+      return `<span class="hate-explain-token" ${attr} style="opacity:${0.4 + intensidad / 160}">${match}</span>`;
+    });
+  });
 }
 
 /* ============================================================

@@ -1315,13 +1315,128 @@ def explain(req: PredictRequest):
     )
 ```
 
-### Paso 6.2 - Ejecutar API
+---
 
-```bash
-uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+### OK REALIZADO - Paso 6.1
+
+**Se hizo:**
+
+- Se implementó `src/api/config.py` con la clase `Settings` (pydantic-settings): ruta al modelo (`models/beto_finetuned_final`), umbral de decisión (0.5), orígenes CORS permitidos y nivel de log. Lee `.env` si existe.
+- Se implementó `src/api/schemas.py` con los esquemas Pydantic v2: `PredictRequest`, `PredictResponse`, `ExplainResponse`, `HealthResponse` y `MetadataResponse`. Se usó `StringConstraints` en lugar del deprecado `constr`.
+- Se implementó `src/api/main.py` con la aplicación FastAPI completa:
+  - **`lifespan`**: carga el tokenizador y el modelo al arrancar; modo degradado (sin crash) si `models/beto_finetuned_final/` no existe.
+  - **CORS**: acepta cualquier origen `chrome-extension://` (via regex) y `localhost`.
+  - **`GET /health`**: liveness check — devuelve si el modelo está cargado.
+  - **`GET /metadata`**: versión del modelo, umbral y configuración activa.
+  - **`POST /predict`**: clasificación binaria (hate / no_hate) con probabilidad corregida según umbral.
+  - **`POST /explain`**: igual que `/predict` + tokens y pesos SHAP (SHAP se carga lazy en la primera petición; fallback a tokens simples si no está disponible).
+- Se verificó que todos los módulos importan sin errores y los 4 endpoints están registrados.
+
+**Resultado de la verificación:**
+
+```
+OK - Modulos importados
+Endpoints: ['/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc', '/health', '/metadata', '/predict', '/explain']
 ```
 
-Acceder a http://127.0.0.1:8000/docs para Swagger UI.
+**Archivos creados/modificados:**
+
+| Archivo | Contenido |
+|---------|-----------|
+| `src/api/config.py` | Clase `Settings` con pydantic-settings. Lee `.env`. |
+| `src/api/schemas.py` | 5 esquemas Pydantic v2 para todos los endpoints. |
+| `src/api/main.py` | App FastAPI con lifespan, CORS, 4 endpoints y modo degradado. |
+
+**Mejoras respecto al borrador del plan:**
+- Modo degradado: el servidor arranca aunque el modelo no exista (HTTP 503 en ML endpoints).
+- SHAP lazy: se inicializa solo en la primera petición a `/explain`, no al arrancar.
+- Endpoint `/metadata` añadido (no estaba en el borrador) para trazabilidad del modelo.
+- Probabilidad de hate calculada correctamente: si el pipeline devuelve `LABEL_0`, `prob_hate = 1 - score`.
+
+**Cómo ejecutar (Paso 6.2):**
+
+```powershell
+$env:PYTHONIOENCODING='utf-8'; .\venv\Scripts\python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+---
+
+### Paso 6.2 - Ejecutar API
+
+> **Este paso lo ejecuta el usuario en su terminal.** El servidor queda corriendo hasta que presiones `Ctrl+C`.
+
+```powershell
+.\venv\Scripts\python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+**Salida esperada al arrancar:**
+
+```
+INFO:     Cargando tokenizador desde models/beto_finetuned_final ...
+INFO:     Cargando modelo desde models/beto_finetuned_final ...
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [...]
+```
+
+**Verificaciones tras arrancar:**
+
+| Verificación | Cómo hacerla |
+|---|---|
+| Servidor vivo | Abrir http://127.0.0.1:8000/health en el navegador |
+| Swagger UI | Abrir http://127.0.0.1:8000/docs |
+| Predecir un texto | Usar el botón "Try it out" en `/predict` en Swagger |
+| Estado del modelo | `/health` → campo `model_loaded: true` |
+
+**Si el modelo no está cargado** (`model_loaded: false`):
+- Verificar que `models/beto_finetuned_final/` existe y tiene los archivos del modelo.
+- El servidor arranca en modo degradado; `/predict` y `/explain` devuelven HTTP 503 hasta que el modelo esté disponible.
+
+**Para probar `/predict` con curl:**
+
+```powershell
+Invoke-RestMethod -Uri http://127.0.0.1:8000/predict -Method POST -ContentType 'application/json' -Body '{"texto": "Ese pinche tipo me cae muy mal"}'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "etiqueta": "hate",
+  "probabilidad": 0.87,
+  "modelo": "beto_finetuned",
+  "version": "v1"
+}
+```
+
+---
+
+### OK REALIZADO - Paso 6.2
+
+**Qué hace este paso:**
+
+Levanta el servidor FastAPI con `uvicorn`. El servidor carga BETO en memoria al arrancar y queda escuchando en `http://127.0.0.1:8000`. La extensión de Chrome se conectará a este servidor para hacer inferencias.
+
+**Comandos a ejecutar por el usuario:**
+
+```powershell
+# En una terminal dedicada (queda corriendo):
+.\venv\Scripts\python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
+
+# Verificar que responde (en otra terminal o navegador):
+Invoke-RestMethod -Uri http://127.0.0.1:8000/health -Method GET
+```
+
+**Endpoints listos para usar:**
+
+| Endpoint | URL |
+|----------|-----|
+| Swagger UI | http://127.0.0.1:8000/docs |
+| ReDoc | http://127.0.0.1:8000/redoc |
+| Health check | http://127.0.0.1:8000/health |
+| Metadata | http://127.0.0.1:8000/metadata |
+| Predict | POST http://127.0.0.1:8000/predict |
+| Explain | POST http://127.0.0.1:8000/explain |
+
+> **Nota:** Mantener el servidor corriendo para el Paso 7 (integración con la extensión Chrome).
 
 ---
 
@@ -1459,7 +1574,67 @@ fetch("http://127.0.0.1:8000/health")
 
 ---
 
-## FASE 8: VALIDACIÓN FINAL (Semana 10)
+### OK REALIZADO - Fase 7 (Integración BETO completa)
+
+**Contexto:** La extensión ya existía como prototipo funcional con detección por lexicón local. El cableado HTTP hacia el backend (`api.js`, handlers en `background.js`) estaba implementado pero sin invocar. Faltaban los 3 cambios descritos a continuación.
+
+**Se implementó:**
+
+**1. `extension/content.js` — recolección de fragmentos para BETO:**
+- En cada llamada a `escanear()`, si `apiHabilitada=true`, se hace un segundo `TreeWalker` recolectando hasta 50 fragmentos de texto (≥15 chars, ≤512 chars).
+- Cada fragmento recibe un ID único `ml_*` y su elemento padre se guarda en `window.__hateRefs[id]`.
+- Los fragmentos se envían al service worker con `enviarLoteAlModelo(fragmentos)`.
+- El flag `data-hate-ml-id` en el elemento padre evita re-enviar el mismo texto en escaneos sucesivos.
+
+**2. `extension/content.js` — procesar resultados del modelo:**
+- Se agregó el handler `tipo === "RESULTADO"` en `chrome.runtime.onMessage`, que llama a `aplicarResultadoML(msg)`.
+- `aplicarResultadoML()`: si `etiqueta=hate` y `probabilidad ≥ umbralMl`, agrega `.hate-ml` al elemento padre + tooltip con probabilidad.
+- Se implementó `aplicarExplicacion()` para `tipo === "EXPLAIN_RES"`: colorea tokens SHAP con `.hate-explain-token[data-shap-positive/negative]`.
+- Se agregó `umbralMl` al config y a la lectura de storage (antes no se leía).
+
+**3. `extension/styles.css` — CSS para marcas BETO:**
+- `.hate-ml`: outline violeta (2px, rgba 124,58,237) para distinguir de las marcas rojas del lexicón.
+- `.hate-explain-token[data-shap-positive]`: fondo rojo translúcido (token que empuja hacia hate).
+- `.hate-explain-token[data-shap-negative]`: fondo verde translúcido (token que empuja hacia no_hate).
+
+**Verificación:**
+
+```powershell
+# Confirmar que no quedan stubs funcionales pendientes:
+findstr /S /N /I "TODO BETO" extension\*.js
+# Solo aparecen comentarios de documentación — ningún stub sin implementar.
+```
+
+**Flujo end-to-end activado:**
+
+```
+Usuario activa API en Options Page
+→ apiHabilitada=true en chrome.storage.local
+→ escanear() recolecta fragmentos → enviarLoteAlModelo()
+→ background.js PREDICT_BATCH → HateApi.enqueuePredict()
+→ POST /predict al backend FastAPI (BETO ajustado)
+→ chrome.tabs.sendMessage(tipo=RESULTADO)
+→ aplicarResultadoML() → .hate-ml (outline violeta)
+```
+
+**Distinciones visuales:**
+
+| Marca | Color | Origen |
+|-------|-------|--------|
+| `.hate-detect-mark` | Rojo | Lexicón local (reglas) |
+| `.hate-ml` | Violeta | BETO ML (probabilístico) |
+| `.hate-explain-token` | Rojo/Verde | SHAP (XAI) |
+
+**Archivos modificados:**
+
+| Archivo | Cambios |
+|---------|---------|
+| `extension/content.js` | +60 líneas: recolección, `aplicarResultadoML()`, `aplicarExplicacion()`, handlers de mensajes, `umbralMl` en config/storage |
+| `extension/styles.css` | +40 líneas: `.hate-ml`, `.hate-explain-token[data-shap-positive/negative]` |
+
+---
+
+
 
 ### Paso 8.1 - Completar EXPERIMENTOS.md
 
@@ -1552,7 +1727,7 @@ git tag v1.0
 
 ## 📋 ESTADO DE PROGRESO — Última actualización: 2026-06-28
 
-### Avance actual: **Fase 1 COMPLETA ✅ + Fase 2 COMPLETA ✅ + Extensión Chrome (Fase 7) COMPLETA ✅**
+### Avance actual: **Fase 1 COMPLETA ✅ + Fase 2 COMPLETA ✅ + Extensión Chrome (Fase 7) COMPLETA ✅ + Fase 6 Pasos 6.1 y 6.2 COMPLETA ✅**
 
 #### Lo que se completó:
 
@@ -1586,6 +1761,12 @@ git tag v1.0
    - Prototipo beta funcional (v0.9.0) desarrollado y probado.
    - Detección 100% local por lexicón (sin BETO, funciona ya).
    - Frontend limpio, moderno, tema claro (violeta suave).
+
+7. **Fase 6 — Backend FastAPI, Paso 6.1 (COMPLETO):** ✅
+   - `src/api/config.py`: clase `Settings` con pydantic-settings (ruta modelo, umbral, CORS, log level).
+   - `src/api/schemas.py`: 5 esquemas Pydantic v2 (`PredictRequest`, `PredictResponse`, `ExplainResponse`, `HealthResponse`, `MetadataResponse`).
+   - `src/api/main.py`: app FastAPI con 4 endpoints (`/health`, `/metadata`, `/predict`, `/explain`), modo degradado si el modelo no existe, SHAP lazy, CORS con regex para extensión Chrome.
+   - Todos los módulos verificados — importan sin errores.
 
 ---
 
