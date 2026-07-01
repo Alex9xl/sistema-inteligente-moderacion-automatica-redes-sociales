@@ -7,6 +7,15 @@
  *   - Importar y exportar JSON (respaldo local)
  *   - Restaurar lista por defecto (vacía la personal)
  *   - Cambiar modo de censura, activar/desactivar diccionario base
+/**
+ * Options page - lógica completa de configuración del lexicón personal.
+ *
+ * Funcionalidades:
+ *   - Listar / agregar / quitar / borrar todos los términos
+ *   - Buscar dentro de la lista personal
+ *   - Importar y exportar JSON (respaldo local)
+ *   - Restaurar lista por defecto (vacía la personal)
+ *   - Cambiar modo de censura, activar/desactivar diccionario base
  *   - Configurar API BETO principal, umbral y URL del backend local
  */
 
@@ -29,6 +38,8 @@ const els = {
   settingLexiconBase: document.getElementById("settingLexiconBase"),
   selectModo: document.getElementById("selectModo"),
   settingApi: document.getElementById("settingApi"),
+  settingLexiconMaestro: document.getElementById("settingLexiconMaestro"),
+  lexiconBody: document.getElementById("lexiconBody"),
   inputUmbral: document.getElementById("inputUmbral"),
   umbralValue: document.getElementById("umbralValue"),
   inputApiUrl: document.getElementById("inputApiUrl"),
@@ -56,6 +67,7 @@ async function init() {
     "apiHabilitada",
     "umbralMl",
     "apiUrl",
+    "lexiconHabilitado",
   ]);
 
   palabras = Array.isArray(stored.palabrasUsuario)
@@ -68,6 +80,10 @@ async function init() {
   els.inputUmbral.value = stored.umbralMl ?? 0.7;
   els.umbralValue.textContent = Number(stored.umbralMl ?? 0.7).toFixed(2);
   els.inputApiUrl.value = stored.apiUrl || "http://127.0.0.1:8000";
+
+  const lexiconHabilitado = stored.lexiconHabilitado !== false;
+  els.settingLexiconMaestro.checked = lexiconHabilitado;
+  actualizarLexiconMaestro(lexiconHabilitado);
 
   renderLista();
   renderCategorias();
@@ -104,6 +120,11 @@ function bindEventos() {
     await chrome.storage.local.set({ apiHabilitada: els.settingApi.checked });
     pingApi();
   });
+  els.settingLexiconMaestro.addEventListener("change", async () => {
+    const habilitado = els.settingLexiconMaestro.checked;
+    await chrome.storage.local.set({ lexiconHabilitado: habilitado });
+    actualizarLexiconMaestro(habilitado);
+  });
   els.inputUmbral.addEventListener("input", () => {
     const value = Number(els.inputUmbral.value);
     els.umbralValue.textContent = value.toFixed(2);
@@ -139,7 +160,21 @@ function bindEventos() {
       els.umbralValue.textContent = value.toFixed(2);
     }
     if (changes.apiUrl) els.inputApiUrl.value = changes.apiUrl.newValue;
+    if (changes.lexiconHabilitado !== undefined) {
+      const habilitado = changes.lexiconHabilitado.newValue !== false;
+      els.settingLexiconMaestro.checked = habilitado;
+      actualizarLexiconMaestro(habilitado);
+    }
   });
+}
+
+/* ============================================================
+ * Toggle maestro del lexicón
+ * ============================================================ */
+
+function actualizarLexiconMaestro(habilitado) {
+  if (!els.lexiconBody) return;
+  els.lexiconBody.classList.toggle("is-disabled", !habilitado);
 }
 
 /* ============================================================
@@ -314,20 +349,19 @@ function renderCategorias() {
   if (!self.LEXICON_DEFAULT) return;
   const map = self.LEXICON_DEFAULT;
   const labels = {
-    insultos: ["Insultos", "Genéricos y vulgares"],
-    discriminatorios: ["Discriminatorios", "Origen, género, orientación"],
-    violencia: ["Violencia", "Amenazas y agresiones"],
-    latam: ["Modismos LATAM", "Variantes regionales"],
+    insultos: "Insultos",
+    discriminatorios: "Discriminat.",
+    violencia: "Violencia",
+    latam: "LATAM",
   };
   const frag = document.createDocumentFragment();
   for (const cat in map) {
     const card = document.createElement("div");
-    card.className = "cat";
-    const [name, sub] = labels[cat] || [cat, ""];
+    card.className = "cat-compact";
+    const name = labels[cat] || cat;
     card.innerHTML = `
-      <div class="cat-name">${name}</div>
-      <div class="cat-count">${map[cat].length}</div>
-      <div class="cat-sub">${sub}</div>
+      <span class="cat-compact-name">${name}</span>
+      <span class="cat-compact-count">${map[cat].length}</span>
     `;
     frag.appendChild(card);
   }

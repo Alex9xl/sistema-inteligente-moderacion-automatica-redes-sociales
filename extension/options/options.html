@@ -23,89 +23,78 @@
             <p class="brand-sub">API BETO principal + lexicón de respaldo · v1.0</p>
           </div>
         </div>
-        <div class="header-actions">
-          <button id="btnExport" class="btn btn-ghost" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
-            Exportar
-          </button>
-          <label class="btn btn-ghost" for="fileImport">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
-            Importar
-            <input type="file" id="fileImport" accept="application/json" hidden />
-          </label>
-          <button id="btnRestore" class="btn btn-secondary" type="button">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-            Restaurar
-          </button>
-        </div>
       </header>
 
       <div class="grid">
-        <!-- Columna izquierda: añadir + lista -->
-        <section class="col">
-          <div class="panel">
-            <div class="panel-head">
-              <h2>Tus palabras / frases</h2>
-              <span class="counter">
-                <strong id="counterValue">0</strong> / 200
-              </span>
+
+        <!-- ================================================
+             LEFT — Motor principal BETO + Ajustes generales
+             ================================================ -->
+        <section class="col col-primary">
+
+          <!-- Panel BETO: protagonista de la extensión -->
+          <div class="panel panel-beto">
+            <div class="panel-beto-header">
+              <span class="badge-primary">Motor Principal</span>
+              <h2 class="beto-title">API BETO Local</h2>
+              <p class="muted">
+                Detecta discurso de odio en contexto mediante el modelo BETO
+                ajustado. Tiene prioridad absoluta; el lexicón solo entra si la
+                API no está disponible.
+              </p>
             </div>
 
-            <form id="formAgregar" class="add-row">
-              <input
-                id="inputPalabra"
-                type="text"
-                maxlength="64"
-                placeholder="Añade un término o frase corta…"
-                autocomplete="off"
-                required
-              />
-              <button class="btn btn-primary" type="submit">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                Agregar
-              </button>
-            </form>
-
-            <div class="search-row">
-              <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input
-                id="inputSearch"
-                type="text"
-                placeholder="Buscar en tu lista…"
-                autocomplete="off"
-              />
-              <button id="btnClearAll" class="btn btn-danger-ghost" type="button" title="Borrar todo">
-                Borrar todo
-              </button>
+            <div class="setting">
+              <div>
+                <strong>Usar API BETO</strong>
+                <p>Motor prioritario de la extensión.</p>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="settingApi" />
+                <span class="slider"></span>
+              </label>
             </div>
 
-            <ul id="listaTerminos" class="lista">
-              <!-- Se rellena dinámicamente -->
-            </ul>
+            <div class="setting">
+              <div>
+                <strong>Umbral de detección</strong>
+                <p>Probabilidad mínima para aplicar censura.</p>
+              </div>
+              <div class="range-control">
+                <span id="umbralValue">0.70</span>
+                <input
+                  type="range"
+                  id="inputUmbral"
+                  min="0.5"
+                  max="0.95"
+                  step="0.05"
+                  value="0.7"
+                />
+              </div>
+            </div>
 
-            <div id="emptyState" class="empty hidden">
-              <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>
-              <p>Tu lista personal está vacía.</p>
-              <span>Agrega palabras que quieras censurar siempre.</span>
+            <div class="api-url">
+              <label for="inputApiUrl">URL del backend local</label>
+              <input
+                type="text"
+                id="inputApiUrl"
+                placeholder="http://127.0.0.1:8000"
+              />
+            </div>
+
+            <div class="api-health">
+              <span id="apiStatusDot" class="status-dot small"></span>
+              <span id="apiStatusText">Sin comprobar</span>
+              <button id="btnPingApi" class="btn btn-ghost btn-mini" type="button">
+                Probar
+              </button>
             </div>
           </div>
 
+          <!-- Panel Ajustes generales -->
           <div class="panel">
-            <h2>Diccionario base</h2>
-            <p class="muted">
-              Categorías incluidas en el respaldo local. Puedes desactivarlo
-              desde el popup si quieres usar solo tu lista personal.
-            </p>
-            <div id="defaultCategories" class="categories">
-              <!-- Se rellena dinámicamente -->
-            </div>
-          </div>
-        </section>
+            <h2>Ajustes generales</h2>
 
-        <!-- Columna derecha: ajustes -->
-        <aside class="col col-aside">
-          <div class="panel">
-            <h2>Ajustes</h2>
             <div class="setting">
               <div>
                 <strong>Detección automática</strong>
@@ -113,17 +102,6 @@
               </div>
               <label class="switch">
                 <input type="checkbox" id="settingDeteccion" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="setting">
-              <div>
-                <strong>Diccionario base</strong>
-                <p>Combinarlo con tu lista personal o usar solo la tuya.</p>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="settingLexiconBase" />
                 <span class="slider"></span>
               </label>
             </div>
@@ -142,56 +120,7 @@
             </div>
           </div>
 
-          <div class="panel">
-            <h2>Backend BETO principal</h2>
-            <p class="muted">
-              La detección contextual usa primero la API local. Si la API está
-              apagada, caída o sin modelo cargado, se aplica el lexicón local.
-            </p>
-            <div class="setting">
-              <div>
-                <strong>Usar API BETO</strong>
-                <p>Motor prioritario de la extensión.</p>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="settingApi" />
-                <span class="slider"></span>
-              </label>
-            </div>
-            <div class="setting">
-              <div>
-                <strong>Umbral BETO</strong>
-                <p>Probabilidad mínima para censurar con la API.</p>
-              </div>
-              <div class="range-control">
-                <span id="umbralValue">0.70</span>
-                <input
-                  type="range"
-                  id="inputUmbral"
-                  min="0.5"
-                  max="0.95"
-                  step="0.05"
-                  value="0.7"
-                />
-              </div>
-            </div>
-            <div class="api-url">
-              <label for="inputApiUrl">URL del backend</label>
-              <input
-                type="text"
-                id="inputApiUrl"
-                placeholder="http://127.0.0.1:8000"
-              />
-            </div>
-            <div class="api-health">
-              <span id="apiStatusDot" class="status-dot small"></span>
-              <span id="apiStatusText">Sin comprobar</span>
-              <button id="btnPingApi" class="btn btn-ghost btn-mini" type="button">
-                Probar
-              </button>
-            </div>
-          </div>
-
+          <!-- Panel Privacidad (en columna principal, más visible) -->
           <div class="panel privacy-panel">
             <h2>🔒 Privacidad</h2>
             <p class="muted">
@@ -199,6 +128,109 @@
               activa. Tu lexicón personal permanece en
               <code>chrome.storage.local</code> y no se envía al backend.
             </p>
+          </div>
+        </section>
+
+        <!-- ================================================
+             RIGHT — Lexicón de respaldo (secundario)
+             ================================================ -->
+        <aside class="col col-secondary">
+          <div class="panel panel-lexicon">
+
+            <!-- Header lexicón con toggle maestro -->
+            <div class="panel-lexicon-header">
+              <span class="badge-secondary">Opción B · Respaldo</span>
+              <div class="lexicon-master-row">
+                <div>
+                  <div class="lexicon-title">Lexicón local</div>
+                  <div class="muted-sm">Activo solo si BETO no responde</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="settingLexiconMaestro" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Cuerpo del lexicón: se atenúa si el maestro está off -->
+            <div id="lexiconBody" class="lexicon-body">
+
+              <!-- Diccionario base -->
+              <div class="lexicon-sub-section">
+                <div class="sub-row">
+                  <span class="sub-label">Diccionario base</span>
+                  <label class="switch switch-sm">
+                    <input type="checkbox" id="settingLexiconBase" checked />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div id="defaultCategories" class="categories-compact"></div>
+              </div>
+
+              <hr class="lexicon-divider" />
+
+              <!-- Palabras personales -->
+              <div class="lexicon-sub-section">
+                <div class="sub-row">
+                  <span class="sub-label">Tus palabras</span>
+                  <span class="counter-sm">
+                    <strong id="counterValue">0</strong>/200
+                  </span>
+                </div>
+
+                <form id="formAgregar" class="add-row-compact">
+                  <input
+                    id="inputPalabra"
+                    type="text"
+                    maxlength="64"
+                    placeholder="Añade un término o frase…"
+                    autocomplete="off"
+                    required
+                  />
+                  <button class="btn btn-primary btn-mini" type="submit">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                  </button>
+                </form>
+
+                <div class="search-row-compact">
+                  <svg class="search-icon-compact" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  <input
+                    id="inputSearch"
+                    type="text"
+                    placeholder="Buscar en tu lista…"
+                    autocomplete="off"
+                  />
+                </div>
+
+                <ul id="listaTerminos" class="lista lista-compact"></ul>
+                <div id="emptyState" class="empty-compact hidden">
+                  Tu lista personal está vacía.
+                </div>
+
+                <div class="lexicon-actions">
+                  <button id="btnClearAll" class="btn btn-danger-ghost btn-mini" type="button">
+                    Borrar todo
+                  </button>
+                  <button id="btnExport" class="btn btn-ghost btn-mini" type="button">
+                    Exportar
+                  </button>
+                  <label class="btn btn-ghost btn-mini" for="fileImport">
+                    Importar
+                    <input type="file" id="fileImport" accept="application/json" hidden />
+                  </label>
+                  <button id="btnRestore" class="btn btn-secondary btn-mini" type="button">
+                    Restaurar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- /lexiconBody -->
+
           </div>
         </aside>
       </div>

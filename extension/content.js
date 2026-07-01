@@ -33,6 +33,7 @@ const config = {
   umbralMl: 0.7,
   lexiconUsuario: [],
   lexiconActivo: true,
+  lexiconHabilitado: true, // toggle maestro del lexicón (options page)
   detectados: 0,
 };
 
@@ -50,6 +51,7 @@ let scanInProgress = false;
     "modoCensura",
     "palabrasUsuario",
     "lexiconActivo",
+    "lexiconHabilitado",
     "apiHabilitada",
     "umbralMl",
     "apiUrl",
@@ -61,6 +63,7 @@ let scanInProgress = false;
     ? stored.palabrasUsuario
     : [];
   config.lexiconActivo = stored.lexiconActivo !== false;
+  config.lexiconHabilitado = stored.lexiconHabilitado !== false;
   config.apiHabilitada = stored.apiHabilitada !== false;
   config.umbralMl = typeof stored.umbralMl === "number" ? stored.umbralMl : 0.7;
   config.apiUrl = stored.apiUrl || "http://127.0.0.1:8000";
@@ -96,6 +99,11 @@ chrome.storage.onChanged.addListener((changes) => {
 
   if (changes.lexiconActivo) {
     config.lexiconActivo = changes.lexiconActivo.newValue !== false;
+    needRebuild = true;
+  }
+
+  if (changes.lexiconHabilitado) {
+    config.lexiconHabilitado = changes.lexiconHabilitado.newValue !== false;
     needRebuild = true;
   }
 
@@ -227,6 +235,12 @@ function debeUsarApi() {
 }
 
 function rebuildRegex() {
+  // Si el toggle maestro del lexicón está apagado, no construir nada.
+  if (!config.lexiconHabilitado) {
+    regexActiva = null;
+    return;
+  }
+
   const lista = [];
   if (config.lexiconActivo && typeof self.lexiconBuildDefaultSet === "function") {
     lista.push(...self.lexiconBuildDefaultSet());
@@ -256,14 +270,32 @@ function escanear() {
 
   try {
     if (debeUsarApi()) {
-      const fragmentos = recolectarFragmentosML();
+      // BUG3: proteger recolectarFragmentosML para que un error interno
+      // no bloquee scanInProgress de forma permanente.
+      let fragmentos;
+      try {
+        fragmentos = recolectarFragmentosML();
+      } catch (_e) {
+        fragmentos = [];
+      }
+
       if (fragmentos.length > 0) {
         enviarLoteAlModelo(fragmentos);
+        return;
       }
+
+      // BUG1: si no hay fragmentos nuevos para la API (todos ya marcados),
+      // ejecutar lexicón como complemento para cubrir términos personales
+      // y texto corto por debajo del umbral MIN_ML_CHARS.
+      try {
+        escanearLexicon();
+      } catch (_e) { /* walker fallo — continuar sin bloquear */ }
       return;
     }
 
     escanearLexicon();
+  } catch (_e) {
+    /* BUG3: capturar errores inesperados para liberar scanInProgress */
   } finally {
     scanInProgress = false;
   }

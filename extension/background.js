@@ -18,6 +18,7 @@ const DEFAULTS = {
   apiHabilitada: true,
   apiUrl: "http://127.0.0.1:8000",
   lexiconActivo: true,
+  lexiconHabilitado: true,
   palabrasUsuario: [],
   estadisticas: { totalDetectados: 0, ultimaActualizacion: 0 },
   configVersion: "1.0",

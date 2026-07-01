@@ -124,7 +124,7 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 3fr 2fr;
   gap: 20px;
 }
 
@@ -132,6 +132,284 @@ body {
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================
+ * Panel BETO — Motor Principal (primary, left column)
+ * ============================================================ */
+
+.panel-beto {
+  border: 1.5px solid var(--accent);
+  background: linear-gradient(140deg, rgba(124, 92, 242, 0.04) 0%, var(--surface) 65%);
+  box-shadow: 0 4px 18px rgba(124, 92, 242, 0.12), var(--shadow-sm);
+}
+
+.panel-beto-header {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.beto-title {
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text) !important;
+  margin: 6px 0 4px !important;
+}
+
+.badge-primary {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+/* ============================================================
+ * Panel Lexicón — Opción B (secondary, right column)
+ * ============================================================ */
+
+.panel-lexicon {
+  background: var(--surface-alt);
+}
+
+.panel-lexicon-header {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge-secondary {
+  display: inline-block;
+  background: #e5e3ef;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.lexicon-master-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lexicon-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.muted-sm {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Lexicón body: se atenúa cuando el toggle maestro está apagado */
+.lexicon-body {
+  transition: opacity 220ms ease;
+}
+
+.lexicon-body.is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  user-select: none;
+}
+
+.lexicon-sub-section {
+  padding: 10px 0;
+}
+
+.sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.sub-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.counter-sm {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.counter-sm strong {
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.lexicon-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2px 0;
+}
+
+/* Switch pequeño para toggles dentro del lexicón */
+.switch-sm {
+  width: 34px !important;
+  height: 20px !important;
+}
+
+.switch-sm .slider::before {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.switch-sm input:checked + .slider::before {
+  transform: translateX(14px) !important;
+}
+
+/* Compact add form */
+.add-row-compact {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.add-row-compact input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.add-row-compact input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.add-row-compact input::placeholder {
+  color: var(--text-dim);
+}
+
+/* Compact search */
+.search-row-compact {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.search-row-compact input {
+  width: 100%;
+  padding: 7px 10px 7px 28px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 7px;
+  font-size: 12px;
+  font-family: inherit;
+  transition: border-color 150ms ease;
+}
+
+.search-row-compact input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.search-row-compact input::placeholder {
+  color: var(--text-dim);
+}
+
+.search-icon-compact {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Compact word list */
+.lista-compact {
+  min-height: 36px;
+  max-height: 110px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 10px;
+}
+
+.lista-compact::-webkit-scrollbar { width: 4px; }
+.lista-compact::-webkit-scrollbar-track { background: transparent; }
+.lista-compact::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+/* Compact empty state */
+.empty-compact {
+  text-align: center;
+  padding: 12px 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+  min-height: 36px;
+}
+
+/* Compact categories (2 columns) */
+.categories-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.cat-compact {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.cat-compact-name {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 700;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-compact-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+/* Lexicón action buttons */
+.lexicon-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
 }
 
 .col {

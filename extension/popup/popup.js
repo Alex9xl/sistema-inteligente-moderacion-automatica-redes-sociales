@@ -133,6 +133,9 @@ function bindEventos() {
     if (changes.estadisticas) {
       const v = changes.estadisticas.newValue || {};
       els.statTotal.textContent = formatNumber(v.totalDetectados || 0);
+      // BUG4: actualizar también el contador de la página activa cuando
+      // el background reporta nuevas detecciones (STATS_UPDATE del content script).
+      refrescarStatsPagina();
     }
     if (changes.palabrasUsuario) {
       els.statPalabras.textContent = (changes.palabrasUsuario.newValue || []).length;
