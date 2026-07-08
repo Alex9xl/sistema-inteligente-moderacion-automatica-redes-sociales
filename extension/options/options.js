@@ -7,20 +7,13 @@
  *   - Importar y exportar JSON (respaldo local)
  *   - Restaurar lista por defecto (vacía la personal)
  *   - Cambiar modo de censura, activar/desactivar diccionario base
-/**
- * Options page - lógica completa de configuración del lexicón personal.
- *
- * Funcionalidades:
- *   - Listar / agregar / quitar / borrar todos los términos
- *   - Buscar dentro de la lista personal
- *   - Importar y exportar JSON (respaldo local)
- *   - Restaurar lista por defecto (vacía la personal)
- *   - Cambiar modo de censura, activar/desactivar diccionario base
  *   - Configurar API BETO principal, umbral y URL del backend local
  */
 
 const MAX_TERMINOS = 200;
 const MAX_LEN = 64;
+const UMBRAL_DEFAULT = 0.7;
+const API_URL_DEFAULT = "http://127.0.0.1:8000";
 
 const els = {
   formAgregar: document.getElementById("formAgregar"),
@@ -42,10 +35,12 @@ const els = {
   lexiconBody: document.getElementById("lexiconBody"),
   inputUmbral: document.getElementById("inputUmbral"),
   umbralValue: document.getElementById("umbralValue"),
+  umbralHint: document.getElementById("umbralHint"),
   inputApiUrl: document.getElementById("inputApiUrl"),
   apiStatusDot: document.getElementById("apiStatusDot"),
   apiStatusText: document.getElementById("apiStatusText"),
   btnPingApi: document.getElementById("btnPingApi"),
+  btnRestoreApi: document.getElementById("btnRestoreApi"),
   toast: document.getElementById("toast"),
 };
 
@@ -77,9 +72,9 @@ async function init() {
   els.settingLexiconBase.checked = stored.lexiconActivo !== false;
   els.selectModo.value = stored.modoCensura || "highlight";
   els.settingApi.checked = stored.apiHabilitada !== false;
-  els.inputUmbral.value = stored.umbralMl ?? 0.7;
-  els.umbralValue.textContent = Number(stored.umbralMl ?? 0.7).toFixed(2);
-  els.inputApiUrl.value = stored.apiUrl || "http://127.0.0.1:8000";
+  els.inputUmbral.value = stored.umbralMl ?? UMBRAL_DEFAULT;
+  actualizarUmbralUI(Number(stored.umbralMl ?? UMBRAL_DEFAULT));
+  els.inputApiUrl.value = stored.apiUrl || API_URL_DEFAULT;
 
   const lexiconHabilitado = stored.lexiconHabilitado !== false;
   els.settingLexiconMaestro.checked = lexiconHabilitado;
@@ -89,6 +84,7 @@ async function init() {
   renderCategorias();
   bindEventos();
   pingApi();
+  await verificarMotorActivo();
 }
 
 function bindEventos() {
@@ -110,24 +106,29 @@ function bindEventos() {
   els.settingDeteccion.addEventListener("change", () =>
     chrome.storage.local.set({ deteccionActiva: els.settingDeteccion.checked })
   );
-  els.settingLexiconBase.addEventListener("change", () =>
-    chrome.storage.local.set({ lexiconActivo: els.settingLexiconBase.checked })
-  );
+  els.settingLexiconBase.addEventListener("change", async () => {
+    await chrome.storage.local.set({
+      lexiconActivo: els.settingLexiconBase.checked,
+    });
+    await verificarMotorActivo();
+  });
   els.selectModo.addEventListener("change", () =>
     chrome.storage.local.set({ modoCensura: els.selectModo.value })
   );
   els.settingApi.addEventListener("change", async () => {
     await chrome.storage.local.set({ apiHabilitada: els.settingApi.checked });
     pingApi();
+    await verificarMotorActivo();
   });
   els.settingLexiconMaestro.addEventListener("change", async () => {
     const habilitado = els.settingLexiconMaestro.checked;
     await chrome.storage.local.set({ lexiconHabilitado: habilitado });
     actualizarLexiconMaestro(habilitado);
+    await verificarMotorActivo();
   });
   els.inputUmbral.addEventListener("input", () => {
     const value = Number(els.inputUmbral.value);
-    els.umbralValue.textContent = value.toFixed(2);
+    actualizarUmbralUI(value);
     chrome.storage.local.set({ umbralMl: value });
   });
   els.inputApiUrl.addEventListener("change", () => {
@@ -138,6 +139,9 @@ function bindEventos() {
     pingApi();
   });
   els.btnPingApi.addEventListener("click", pingApi);
+  if (els.btnRestoreApi) {
+    els.btnRestoreApi.addEventListener("click", restaurarApiDefaults);
+  }
 
   // Reaccionar a cambios externos
   chrome.storage.onChanged.addListener((changes) => {
@@ -155,9 +159,9 @@ function bindEventos() {
     if (changes.apiHabilitada)
       els.settingApi.checked = changes.apiHabilitada.newValue !== false;
     if (changes.umbralMl) {
-      const value = Number(changes.umbralMl.newValue ?? 0.7);
+      const value = Number(changes.umbralMl.newValue ?? UMBRAL_DEFAULT);
       els.inputUmbral.value = value;
-      els.umbralValue.textContent = value.toFixed(2);
+      actualizarUmbralUI(value);
     }
     if (changes.apiUrl) els.inputApiUrl.value = changes.apiUrl.newValue;
     if (changes.lexiconHabilitado !== undefined) {
@@ -282,6 +286,7 @@ async function confirmRestaurar() {
 async function persistir() {
   await chrome.storage.local.set({ palabrasUsuario: palabras });
   renderLista();
+  await verificarMotorActivo();
 }
 
 /* ============================================================
@@ -370,8 +375,99 @@ function renderCategorias() {
 }
 
 /* ============================================================
+ * Salvaguarda: evita que quede sin ningun motor de deteccion
+ * ============================================================
+ * Si la API BETO esta deshabilitada y el lexicon queda sin ningun
+ * origen activo (ni diccionario base, ni palabras propias, ni el
+ * toggle maestro del lexicon), la extension quedaria "activa" pero
+ * sin nada que detectar. Se reactiva el lexicon local como respaldo
+ * minimo y se avisa al usuario.
+ * ============================================================ */
+
+async function verificarMotorActivo() {
+  const stored = await chrome.storage.local.get([
+    "apiHabilitada",
+    "lexiconHabilitado",
+    "lexiconActivo",
+    "palabrasUsuario",
+  ]);
+
+  const apiHabilitada = stored.apiHabilitada !== false;
+  const lexiconHabilitado = stored.lexiconHabilitado !== false;
+  const lexiconActivo = stored.lexiconActivo !== false;
+  const tienePalabrasPropias =
+    Array.isArray(stored.palabrasUsuario) && stored.palabrasUsuario.length > 0;
+
+  const lexiconEfectivo = lexiconHabilitado && (lexiconActivo || tienePalabrasPropias);
+  const algunMotorActivo = apiHabilitada || lexiconEfectivo;
+
+  if (algunMotorActivo) return;
+
+  await chrome.storage.local.set({
+    lexiconHabilitado: true,
+    lexiconActivo: true,
+  });
+  els.settingLexiconMaestro.checked = true;
+  els.settingLexiconBase.checked = true;
+  actualizarLexiconMaestro(true);
+  toast(
+    "Se reactivó el lexicón local: no puedes desactivar la API BETO y el lexicón al mismo tiempo.",
+    "error"
+  );
+}
+
+/* ============================================================
  * Backend API
  * ============================================================ */
+
+function actualizarUmbralUI(value) {
+  const v = Number.isFinite(value) ? value : UMBRAL_DEFAULT;
+  els.umbralValue.textContent = v.toFixed(2);
+  els.inputUmbral.setAttribute("aria-valuetext", v.toFixed(2));
+
+  if (!els.umbralHint) return;
+
+  let nivel;
+  let texto;
+  if (v < 0.5) {
+    nivel = "nivel-sensible";
+    texto = "Muy sensible: detecta más casos, pero puede marcar más falsos positivos.";
+  } else if (v <= 0.65) {
+    nivel = "nivel-equilibrado";
+    texto = "Equilibrado entre precisión y detección.";
+  } else {
+    nivel = "nivel-estricto";
+    texto = "Estricto: prioriza evitar falsos positivos, puede dejar pasar casos dudosos.";
+  }
+
+  els.umbralHint.textContent = texto;
+  els.umbralHint.classList.remove(
+    "nivel-sensible",
+    "nivel-equilibrado",
+    "nivel-estricto"
+  );
+  els.umbralHint.classList.add(nivel);
+}
+
+async function restaurarApiDefaults() {
+  if (
+    !confirm(
+      "Esto restaurará el umbral a 0.70 y la URL del backend a http://127.0.0.1:8000. ¿Continuar?"
+    )
+  )
+    return;
+
+  await chrome.storage.local.set({
+    umbralMl: UMBRAL_DEFAULT,
+    apiUrl: API_URL_DEFAULT,
+  });
+
+  els.inputUmbral.value = UMBRAL_DEFAULT;
+  actualizarUmbralUI(UMBRAL_DEFAULT);
+  els.inputApiUrl.value = API_URL_DEFAULT;
+  toast("Umbral y URL del backend restaurados", "success");
+  pingApi();
+}
 
 function normalizarApiUrl(raw) {
   const value = String(raw || "").trim().replace(/\/+$/, "");

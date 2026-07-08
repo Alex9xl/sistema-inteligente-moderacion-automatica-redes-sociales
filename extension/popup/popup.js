@@ -19,15 +19,29 @@ const els = {
   statPagina: document.getElementById("statPagina"),
   statTotal: document.getElementById("statTotal"),
   statPalabras: document.getElementById("statPalabras"),
+  toast: document.getElementById("toast"),
 };
 
 document.addEventListener("DOMContentLoaded", init);
 
+function pintarVersion() {
+  try {
+    const manifest = chrome.runtime.getManifest();
+    const version = manifest.version_name || manifest.version || "1.0";
+    const el = document.getElementById("version");
+    if (el) el.textContent = `v${version}`;
+  } catch (_e) {
+    /* Si falla, se conserva el texto estático del HTML. */
+  }
+}
+
 async function init() {
+  pintarVersion();
   const stored = await chrome.storage.local.get([
     "deteccionActiva",
     "modoCensura",
     "lexiconActivo",
+    "lexiconHabilitado",
     "palabrasUsuario",
     "apiHabilitada",
     "apiUrl",
@@ -38,6 +52,7 @@ async function init() {
     deteccionActiva: !!stored.deteccionActiva,
     modoCensura: stored.modoCensura || "highlight",
     lexiconActivo: stored.lexiconActivo !== false,
+    lexiconHabilitado: stored.lexiconHabilitado !== false,
     palabrasUsuario: stored.palabrasUsuario || [],
     apiHabilitada: stored.apiHabilitada !== false,
     apiUrl: stored.apiUrl || "http://127.0.0.1:8000",
@@ -48,6 +63,46 @@ async function init() {
   bindEventos();
   await pingApi(cfg.apiUrl, cfg.apiHabilitada);
   refrescarStatsPagina();
+  await verificarMotorActivo();
+}
+
+/* ============================================================
+ * Salvaguarda: evita que quede sin ningun motor de deteccion
+ * ============================================================
+ * Si el usuario apaga la API BETO y el lexicon queda sin ningun
+ * origen activo (ni diccionario base, ni palabras propias, ni el
+ * toggle maestro del lexicon), la extension quedaria "activa" pero
+ * sin nada que detectar. Se reactiva el lexicon local como respaldo
+ * minimo y se avisa al usuario.
+ */
+async function verificarMotorActivo() {
+  const stored = await chrome.storage.local.get([
+    "apiHabilitada",
+    "lexiconHabilitado",
+    "lexiconActivo",
+    "palabrasUsuario",
+  ]);
+
+  const apiHabilitada = stored.apiHabilitada !== false;
+  const lexiconHabilitado = stored.lexiconHabilitado !== false;
+  const lexiconActivo = stored.lexiconActivo !== false;
+  const tienePalabrasPropias =
+    Array.isArray(stored.palabrasUsuario) && stored.palabrasUsuario.length > 0;
+
+  const lexiconEfectivo = lexiconHabilitado && (lexiconActivo || tienePalabrasPropias);
+  const algunMotorActivo = apiHabilitada || lexiconEfectivo;
+
+  if (algunMotorActivo) return;
+
+  await chrome.storage.local.set({
+    lexiconHabilitado: true,
+    lexiconActivo: true,
+  });
+  els.toggleLexiconBase.checked = true;
+  toast(
+    "Se reactivó el lexicón local: no puedes desactivar la API BETO y el lexicón al mismo tiempo.",
+    "warning"
+  );
 }
 
 function pintarEstado(cfg) {
@@ -64,7 +119,7 @@ function setEstado(cfg) {
   const activo = !!cfg.deteccionActiva;
   els.statusCard.classList.toggle("is-on", activo);
   els.statusDot.classList.toggle("is-on", activo);
-  els.statusTitle.textContent = activo ? "Detección activa" : "Detección desactivada";
+  els.statusTitle.textContent = activo ? "Extensión activa" : "Extensión desactivada";
 
   if (!activo) {
     els.statusSub.textContent = "Activa el interruptor para empezar";
@@ -96,6 +151,7 @@ function bindEventos() {
     const stored = await chrome.storage.local.get(["deteccionActiva", "apiUrl"]);
     setEstado({ deteccionActiva: !!stored.deteccionActiva, apiHabilitada });
     await pingApi(stored.apiUrl || "http://127.0.0.1:8000", apiHabilitada);
+    await verificarMotorActivo();
     pedirEscaneo();
   });
 
@@ -103,6 +159,7 @@ function bindEventos() {
     await chrome.storage.local.set({
       lexiconActivo: els.toggleLexiconBase.checked,
     });
+    await verificarMotorActivo();
     pedirEscaneo();
   });
 
@@ -116,7 +173,7 @@ function bindEventos() {
   });
 
   els.btnRescan.addEventListener("click", () => {
-    pedirEscaneo();
+    pedirEscaneoConFeedback();
     micropulso(els.btnRescan);
   });
 
@@ -160,6 +217,26 @@ async function pedirEscaneo() {
   } catch (_e) {
     /* sin pestana activa */
   }
+}
+
+async function pedirEscaneoConFeedback() {
+  const btn = els.btnRescan;
+  if (!btn || btn.disabled) return;
+
+  const textoOriginal = btn.querySelector(".btn-text");
+  const labelOriginal = textoOriginal ? textoOriginal.textContent : btn.textContent;
+
+  btn.disabled = true;
+  btn.classList.add("is-loading");
+  if (textoOriginal) textoOriginal.textContent = "Escaneando…";
+
+  await pedirEscaneo();
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.classList.remove("is-loading");
+    if (textoOriginal) textoOriginal.textContent = labelOriginal;
+  }, 700);
 }
 
 function esUrlInyectable(url) {
@@ -229,4 +306,15 @@ function formatNumber(n) {
 function micropulso(el) {
   el.style.transform = "scale(0.96)";
   setTimeout(() => (el.style.transform = ""), 120);
+}
+
+let toastTimer;
+function toast(msg, kind = "success") {
+  if (!els.toast) return;
+  els.toast.textContent = msg;
+  els.toast.classList.remove("success", "warning", "error");
+  els.toast.classList.add(kind);
+  els.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 3200);
 }
