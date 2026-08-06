@@ -9,6 +9,7 @@ Esta carpeta contiene documentación **corta y autocontenida** para entender el 
 3. **[`modelo.md`](modelo.md)** — Ficha técnica del modelo BETO ajustado: configuración exacta de entrenamiento y resultados finales frente a los baselines.
 4. **[`resultados.md`](resultados.md)** — Validación de las 3 hipótesis de investigación (H1, H2, H3) con métricas y significancia estadística. Útil como referencia rápida antes de una sustentación.
 5. **[`glosario.md`](glosario.md)** — Definiciones de todos los términos técnicos usados en el proyecto y en esta documentación.
+6. **[`reproduccion_rapida.md`](reproduccion_rapida.md)** — Lista de comandos, en orden, para regenerar todo el proyecto desde cero (asumiendo que ya tienes `data/raw/`). Es el resumen ejecutable de `flujo_completo.md`.
 
 ## Relación con otras carpetas de documentación
 
