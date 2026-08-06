@@ -512,9 +512,11 @@ Tesis_Proyecto/
 │   └── logs/
 │
 ├── docs/                             # documentación adicional
-│   ├── arquitectura.md
-│   ├── decisiones.md
+│   ├── README.md
+│   ├── flujo_completo.md
+│   ├── arquitectura.md               # incluye decisiones de diseño
 │   ├── modelo.md
+│   ├── resultados.md
 │   └── glosario.md
 │
 └── scripts/                          # entrypoints CLI
@@ -883,7 +885,7 @@ El superset ya entrega etiquetas binarizadas (labels: 0.0 / 1.0). Solo DETOXIS r
 | DETOXIS | `toxicity_level >= 2` | 1 | Este proyecto |
 | DETOXIS | `toxicity_level < 2` | 0 | Este proyecto |
 
-**Nota para la defensa:** El superset ya documenta sus mapeos en el paper de Tonneau et al. (2024) y en su codigo publico. Para DETOXIS el umbral `>= 2` se justifica como toxicidad moderada a alta segun la guia de anotacion de IberLEF 2021. Estas equivalencias deben quedar reflejadas en `notebooks/02_unificacion.ipynb` y en `docs/decisiones.md`. **Una pregunta inevitable del jurado es: como unifico las etiquetas?**.
+**Nota para la defensa:** El superset ya documenta sus mapeos en el paper de Tonneau et al. (2024) y en su codigo publico. Para DETOXIS el umbral `>= 2` se justifica como toxicidad moderada a alta segun la guia de anotacion de IberLEF 2021. Estas equivalencias deben quedar reflejadas en `notebooks/02_unificacion.ipynb` y en `docs/arquitectura.md`. **Una pregunta inevitable del jurado es: como unifico las etiquetas?**.
 
 ## 7.6 Estrategia de enriquecimiento
 
@@ -1001,7 +1003,7 @@ Ejemplos:
    - Tomar 100 textos marcados `True` y 100 marcados `False`.
    - Anotación manual de “¿realmente contiene un modismo LATAM?”.
    - Calcular **Precision** (% de True correctos) y **Recall aproximado** (% de modismos reales detectados) del flag.
-   - Reportar la matriz de confusión del flag en `docs/decisiones.md`.
+   - Reportar la matriz de confusión del flag en `docs/resultados.md`.
 
 3. **Validación cualitativa**:
    - Confirmar que los términos no son exclusivos del español peninsular (sería una contradicción con la hipótesis).

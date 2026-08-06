@@ -87,8 +87,11 @@ Es importante ejecutar tambien las 3 celdas extra destinadas a la Hipotesis 1. E
 
 ## Documentacion
 
+Para una introduccion rapida al proyecto (arquitectura, flujo completo, resultados de las hipotesis y glosario), empezar por `docs/README.md`.
+
 | Documento | Proposito |
 |-----------|-----------|
+| `docs/README.md` | Indice de la documentacion corta y autocontenida (arquitectura, flujo, modelo, resultados, glosario). |
 | `documentos_extras/INSTRUCCIONES_PROYECTO.md` | Especificacion tecnica y metodologica completa del proyecto. |
 | `documentos_extras/PLAN_DESARROLLO.md` | Plan formal para construir el proyecto desde cero. |
 | `documentos_extras/GUIA_REPRODUCCION.md` | Guia para reproducir datos, entrenamiento, evaluacion, API y extension. |
