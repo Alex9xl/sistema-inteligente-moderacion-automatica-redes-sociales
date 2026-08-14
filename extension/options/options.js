@@ -12,8 +12,16 @@
 
 const MAX_TERMINOS = 200;
 const MAX_LEN = 64;
+const MIN_LEN = 3;
 const UMBRAL_DEFAULT = 0.7;
 const API_URL_DEFAULT = "http://127.0.0.1:8000";
+
+/*
+ * El manifest solo declara host_permissions para el backend local. Una URL
+ * fuera de estos hosts se guardaría pero el navegador bloquearía el fetch,
+ * y la UI solo mostraría "sin conexión" sin explicar la causa real.
+ */
+const HOSTS_PERMITIDOS = ["127.0.0.1", "localhost"];
 
 const els = {
   formAgregar: document.getElementById("formAgregar"),
@@ -24,6 +32,7 @@ const els = {
   counterValue: document.getElementById("counterValue"),
   btnClearAll: document.getElementById("btnClearAll"),
   btnExport: document.getElementById("btnExport"),
+  btnImport: document.getElementById("btnImport"),
   fileImport: document.getElementById("fileImport"),
   btnRestore: document.getElementById("btnRestore"),
   defaultCategories: document.getElementById("defaultCategories"),
@@ -37,11 +46,19 @@ const els = {
   umbralValue: document.getElementById("umbralValue"),
   umbralHint: document.getElementById("umbralHint"),
   inputApiUrl: document.getElementById("inputApiUrl"),
+  apiUrlWarning: document.getElementById("apiUrlWarning"),
+  apiUrlWarningText: document.getElementById("apiUrlWarningText"),
   apiStatusDot: document.getElementById("apiStatusDot"),
   apiStatusText: document.getElementById("apiStatusText"),
   btnPingApi: document.getElementById("btnPingApi"),
   btnRestoreApi: document.getElementById("btnRestoreApi"),
+  brandVersion: document.getElementById("brandVersion"),
   toast: document.getElementById("toast"),
+  modalOverlay: document.getElementById("modalOverlay"),
+  modalTitle: document.getElementById("modalTitle"),
+  modalMessage: document.getElementById("modalMessage"),
+  modalConfirm: document.getElementById("modalConfirm"),
+  modalCancel: document.getElementById("modalCancel"),
 };
 
 let palabras = [];
@@ -53,7 +70,21 @@ document.addEventListener("DOMContentLoaded", init);
  * Inicialización
  * ============================================================ */
 
+function pintarVersion() {
+  if (!els.brandVersion) return;
+  try {
+    const manifest = chrome.runtime.getManifest();
+    els.brandVersion.textContent = `v${
+      manifest.version_name || manifest.version || "1.0"
+    }`;
+  } catch (_e) {
+    /* Se conserva el texto estático del HTML. */
+  }
+}
+
 async function init() {
+  pintarVersion();
+
   const stored = await chrome.storage.local.get([
     "palabrasUsuario",
     "deteccionActiva",
@@ -75,6 +106,7 @@ async function init() {
   els.inputUmbral.value = stored.umbralMl ?? UMBRAL_DEFAULT;
   actualizarUmbralUI(Number(stored.umbralMl ?? UMBRAL_DEFAULT));
   els.inputApiUrl.value = stored.apiUrl || API_URL_DEFAULT;
+  revisarApiUrl(els.inputApiUrl.value);
 
   const lexiconHabilitado = stored.lexiconHabilitado !== false;
   els.settingLexiconMaestro.checked = lexiconHabilitado;
@@ -102,6 +134,9 @@ function bindEventos() {
   els.btnExport.addEventListener("click", exportar);
   els.btnRestore.addEventListener("click", confirmRestaurar);
   els.fileImport.addEventListener("change", importar);
+  if (els.btnImport) {
+    els.btnImport.addEventListener("click", () => els.fileImport.click());
+  }
 
   els.settingDeteccion.addEventListener("change", () =>
     chrome.storage.local.set({ deteccionActiva: els.settingDeteccion.checked })
@@ -135,6 +170,7 @@ function bindEventos() {
     const url = normalizarApiUrl(els.inputApiUrl.value);
     els.inputApiUrl.value = url;
     chrome.storage.local.set({ apiUrl: url });
+    revisarApiUrl(url);
     toast("URL del backend actualizada", "success");
     pingApi();
   });
@@ -163,11 +199,56 @@ function bindEventos() {
       els.inputUmbral.value = value;
       actualizarUmbralUI(value);
     }
-    if (changes.apiUrl) els.inputApiUrl.value = changes.apiUrl.newValue;
+    if (changes.apiUrl) {
+      els.inputApiUrl.value = changes.apiUrl.newValue;
+      revisarApiUrl(changes.apiUrl.newValue);
+    }
     if (changes.lexiconHabilitado !== undefined) {
       const habilitado = changes.lexiconHabilitado.newValue !== false;
       els.settingLexiconMaestro.checked = habilitado;
       actualizarLexiconMaestro(habilitado);
+    }
+  });
+}
+
+/* ============================================================
+ * Modal de confirmación
+ * ============================================================ */
+
+let modalResolver = null;
+
+function confirmar(mensaje, { titulo = "Confirmar", accion = "Confirmar" } = {}) {
+  if (!els.modalOverlay) return Promise.resolve(window.confirm(mensaje));
+
+  els.modalTitle.textContent = titulo;
+  els.modalMessage.textContent = mensaje;
+  els.modalConfirm.textContent = accion;
+  els.modalOverlay.classList.add("show");
+  els.modalConfirm.focus();
+
+  return new Promise((resolve) => {
+    modalResolver = resolve;
+  });
+}
+
+function cerrarModal(resultado) {
+  if (!els.modalOverlay) return;
+  els.modalOverlay.classList.remove("show");
+  if (modalResolver) {
+    modalResolver(resultado);
+    modalResolver = null;
+  }
+}
+
+if (els.modalConfirm) {
+  els.modalConfirm.addEventListener("click", () => cerrarModal(true));
+  els.modalCancel.addEventListener("click", () => cerrarModal(false));
+  els.modalOverlay.addEventListener("click", (e) => {
+    if (e.target === els.modalOverlay) cerrarModal(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && els.modalOverlay.classList.contains("show")) {
+      cerrarModal(false);
     }
   });
 }
@@ -179,6 +260,7 @@ function bindEventos() {
 function actualizarLexiconMaestro(habilitado) {
   if (!els.lexiconBody) return;
   els.lexiconBody.classList.toggle("is-disabled", !habilitado);
+  els.lexiconBody.setAttribute("aria-hidden", String(!habilitado));
 }
 
 /* ============================================================
@@ -232,6 +314,14 @@ function renderLista() {
 async function agregar(raw) {
   const t = (raw || "").trim().toLowerCase();
   if (!t) return;
+  /*
+   * Un término de 1 o 2 caracteres coincidiría con fragmentos sueltos en
+   * casi cualquier página y volvería la navegación inusable.
+   */
+  if (t.length < MIN_LEN) {
+    toast(`Mínimo ${MIN_LEN} caracteres: "${t}" marcaría demasiado texto`, "error");
+    return;
+  }
   if (t.length > MAX_LEN) {
     toast(`Máximo ${MAX_LEN} caracteres por término`, "error");
     return;
@@ -259,19 +349,22 @@ async function quitar(t) {
 
 async function confirmBorrarTodo() {
   if (palabras.length === 0) return;
-  if (!confirm(`¿Borrar los ${palabras.length} términos de tu lista?`)) return;
+  const ok = await confirmar(
+    `Se eliminarán los ${palabras.length} términos de tu lista personal. El diccionario base no se toca.`,
+    { titulo: "Borrar lista personal", accion: "Borrar todo" }
+  );
+  if (!ok) return;
   palabras = [];
   await persistir();
   toast("Lista personal borrada", "success");
 }
 
 async function confirmRestaurar() {
-  if (
-    !confirm(
-      "Esto vaciará tu lista personal. El diccionario base se mantiene activo. ¿Continuar?"
-    )
-  )
-    return;
+  const ok = await confirmar(
+    "Esto vaciará tu lista personal y volverá al modo de censura por defecto (Resaltar). El diccionario base se mantiene activo.",
+    { titulo: "Restaurar configuración", accion: "Restaurar" }
+  );
+  if (!ok) return;
   palabras = [];
   await chrome.storage.local.set({
     palabrasUsuario: palabras,
@@ -280,6 +373,8 @@ async function confirmRestaurar() {
   });
   els.settingLexiconBase.checked = true;
   els.selectModo.value = "highlight";
+  renderLista();
+  await verificarMotorActivo();
   toast("Configuración restaurada", "success");
 }
 
@@ -331,12 +426,26 @@ function importar(e) {
       const sane = arr
         .filter((x) => typeof x === "string")
         .map((x) => x.trim().toLowerCase())
-        .filter((x) => x.length > 0 && x.length <= MAX_LEN);
-      // Merge con existentes y dedup
+        .filter((x) => x.length >= MIN_LEN && x.length <= MAX_LEN);
+
+      const previas = palabras.length;
       const set = new Set([...palabras, ...sane]);
       palabras = Array.from(set).slice(0, MAX_TERMINOS);
+      const agregadas = palabras.length - previas;
+      const descartadas = sane.length - agregadas;
+
       await persistir();
-      toast(`Importadas ${sane.length} entradas`, "success");
+
+      if (agregadas === 0) {
+        toast("No se agregó nada: ya estaban en tu lista", "error");
+      } else if (descartadas > 0) {
+        toast(
+          `Importadas ${agregadas}; ${descartadas} omitidas (duplicadas o por el límite de ${MAX_TERMINOS})`,
+          "warning"
+        );
+      } else {
+        toast(`Importadas ${agregadas} entradas`, "success");
+      }
     } catch (err) {
       toast("Archivo JSON inválido", "error");
     } finally {
@@ -363,11 +472,17 @@ function renderCategorias() {
   for (const cat in map) {
     const card = document.createElement("div");
     card.className = "cat-compact";
-    const name = labels[cat] || cat;
-    card.innerHTML = `
-      <span class="cat-compact-name">${name}</span>
-      <span class="cat-compact-count">${map[cat].length}</span>
-    `;
+
+    const name = document.createElement("span");
+    name.className = "cat-compact-name";
+    name.textContent = labels[cat] || cat;
+
+    const count = document.createElement("span");
+    count.className = "cat-compact-count";
+    count.textContent = String(map[cat].length);
+
+    card.appendChild(name);
+    card.appendChild(count);
     frag.appendChild(card);
   }
   els.defaultCategories.innerHTML = "";
@@ -412,7 +527,7 @@ async function verificarMotorActivo() {
   actualizarLexiconMaestro(true);
   toast(
     "Se reactivó el lexicón local: no puedes desactivar la API BETO y el lexicón al mismo tiempo.",
-    "error"
+    "warning"
   );
 }
 
@@ -440,6 +555,10 @@ function actualizarUmbralUI(value) {
     texto = "Estricto: prioriza evitar falsos positivos, puede dejar pasar casos dudosos.";
   }
 
+  if (Math.abs(v - UMBRAL_DEFAULT) < 0.001) {
+    texto += " Es el valor recomendado.";
+  }
+
   els.umbralHint.textContent = texto;
   els.umbralHint.classList.remove(
     "nivel-sensible",
@@ -450,12 +569,11 @@ function actualizarUmbralUI(value) {
 }
 
 async function restaurarApiDefaults() {
-  if (
-    !confirm(
-      "Esto restaurará el umbral a 0.70 y la URL del backend a http://127.0.0.1:8000. ¿Continuar?"
-    )
-  )
-    return;
+  const ok = await confirmar(
+    "Se restaurará el umbral a 0.70 y la URL del backend a http://127.0.0.1:8000.",
+    { titulo: "Restaurar motor principal", accion: "Restaurar" }
+  );
+  if (!ok) return;
 
   await chrome.storage.local.set({
     umbralMl: UMBRAL_DEFAULT,
@@ -465,15 +583,46 @@ async function restaurarApiDefaults() {
   els.inputUmbral.value = UMBRAL_DEFAULT;
   actualizarUmbralUI(UMBRAL_DEFAULT);
   els.inputApiUrl.value = API_URL_DEFAULT;
+  revisarApiUrl(API_URL_DEFAULT);
   toast("Umbral y URL del backend restaurados", "success");
   pingApi();
 }
 
 function normalizarApiUrl(raw) {
   const value = String(raw || "").trim().replace(/\/+$/, "");
-  if (!value) return "http://127.0.0.1:8000";
+  if (!value) return API_URL_DEFAULT;
   if (!/^https?:\/\//i.test(value)) return "http://" + value;
   return value;
+}
+
+function esHostPermitido(url) {
+  try {
+    const { hostname, protocol } = new URL(url);
+    if (protocol !== "http:") return false;
+    return HOSTS_PERMITIDOS.includes(hostname);
+  } catch (_e) {
+    return false;
+  }
+}
+
+/*
+ * Avisa cuando la URL apunta fuera de los hosts declarados en el manifest.
+ * El valor igual se guarda (el usuario puede estar preparando un backend
+ * remoto), pero deja claro por qué la conexión va a fallar.
+ */
+function revisarApiUrl(url) {
+  if (!els.apiUrlWarning) return true;
+
+  const permitido = esHostPermitido(url);
+  if (permitido) {
+    els.apiUrlWarning.classList.remove("show");
+    return true;
+  }
+
+  els.apiUrlWarningText.textContent =
+    "Esta extensión solo tiene permiso para conectarse a http://127.0.0.1 o http://localhost. Con otra dirección el navegador bloqueará la conexión y se usará el lexicón local.";
+  els.apiUrlWarning.classList.add("show");
+  return false;
 }
 
 function pingApi() {
@@ -485,6 +634,12 @@ function pingApi() {
   if (!apiHabilitada) {
     els.apiStatusDot.classList.add("is-warn");
     els.apiStatusText.textContent = "API desactivada; se usará el lexicón";
+    return;
+  }
+
+  if (!esHostPermitido(url)) {
+    els.apiStatusDot.classList.add("is-error");
+    els.apiStatusText.textContent = "URL no permitida por el manifest";
     return;
   }
 
@@ -502,6 +657,9 @@ function pingApi() {
     } else if (res.reason === "model_not_loaded") {
       els.apiStatusDot.classList.add("is-error");
       els.apiStatusText.textContent = "API activa, modelo no cargado";
+    } else if (res.reason === "host_not_allowed") {
+      els.apiStatusDot.classList.add("is-error");
+      els.apiStatusText.textContent = "URL no permitida por el manifest";
     } else {
       els.apiStatusDot.classList.add("is-error");
       els.apiStatusText.textContent = "API sin conexión";
@@ -515,10 +673,11 @@ function pingApi() {
 
 let toastTimer;
 function toast(msg, kind = "success") {
+  if (!els.toast) return;
   els.toast.textContent = msg;
-  els.toast.classList.remove("success", "error");
+  els.toast.classList.remove("success", "warning", "error");
   els.toast.classList.add(kind);
   els.toast.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2200);
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 3000);
 }

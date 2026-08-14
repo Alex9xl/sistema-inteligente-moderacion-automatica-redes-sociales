@@ -1,6 +1,11 @@
 /* ============================================================
  * Estilos inyectados en la página por el content script.
  * Solo afectan a las marcas de texto detectadas (.hate-detect-mark).
+ *
+ * Semántica de color por nivel de confianza:
+ *   - Ámbar  = lexicón local (coincidencia literal, heurística).
+ *   - Rojo   = modelo BETO (detección contextual, alta confianza).
+ * El violeta queda reservado para la identidad de la extensión.
  * ============================================================ */
 
 .hate-detect-mark {
@@ -11,15 +16,15 @@
 }
 
 .hate-detect-mark.hate-detect-mode-highlight {
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.4));
+  background: linear-gradient(180deg, rgba(217, 119, 6, 0.22), rgba(217, 119, 6, 0.36));
   color: inherit;
-  box-shadow: inset 0 -2px 0 rgba(239, 68, 68, 0.85);
+  box-shadow: inset 0 -2px 0 rgba(217, 119, 6, 0.85);
   font-weight: 600;
 }
 
 .hate-detect-mark.hate-detect-mode-asterisk {
-  background-color: #1f2937;
-  color: #f9fafb;
+  background-color: #78350f;
+  color: #fffbeb;
   font-weight: 700;
   letter-spacing: 1px;
   padding: 0 4px;
@@ -28,14 +33,14 @@
 
 .hate-detect-mark.hate-detect-mode-blur {
   filter: blur(5px);
-  background-color: rgba(239, 68, 68, 0.18);
+  background-color: rgba(217, 119, 6, 0.18);
   cursor: pointer;
   user-select: none;
 }
 
 .hate-detect-mark.hate-detect-mode-blur.revealed {
   filter: none;
-  background-color: rgba(239, 68, 68, 0.18);
+  background-color: rgba(217, 119, 6, 0.18);
 }
 
 .hate-detect-mark.hate-detect-mode-hide {
@@ -48,18 +53,24 @@
 }
 
 .hate-detect-mark.hate-detect-mode-hide.revealed {
-  background-color: rgba(239, 68, 68, 0.25);
+  background-color: rgba(217, 119, 6, 0.25);
   font-style: normal;
+  color: inherit;
 }
 
 .hate-detect-mark:hover {
   filter: brightness(1.05);
 }
 
+.hate-detect-mark:focus-visible {
+  outline: 2px solid #6d4ae6;
+  outline-offset: 2px;
+}
+
 /* ================================================================
  * Marcas del modelo BETO (.hate-ml-mark)
- * Usan los mismos modos de censura que el lexicon, pero con azul para
- * distinguir la API principal del respaldo local.
+ * Usan los mismos modos de censura que el lexicon, pero en rojo para
+ * señalar que provienen del motor contextual de alta confianza.
  * ================================================================ */
 
 .hate-ml-mark {
@@ -67,38 +78,39 @@
 }
 
 .hate-ml-mark.hate-detect-mode-highlight {
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.2), rgba(37, 99, 235, 0.36));
-  box-shadow: inset 0 -2px 0 rgba(37, 99, 235, 0.9);
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.36));
+  box-shadow: inset 0 -2px 0 rgba(220, 38, 38, 0.9);
   font-weight: 650;
 }
 
 .hate-ml-mark.hate-detect-mode-asterisk {
-  background-color: #1d4ed8;
-  color: #eff6ff;
+  background-color: #991b1b;
+  color: #fef2f2;
 }
 
 .hate-ml-mark.hate-detect-mode-blur {
-  background-color: rgba(37, 99, 235, 0.18);
+  background-color: rgba(220, 38, 38, 0.18);
 }
 
 .hate-ml-mark.hate-detect-mode-blur.revealed {
-  background-color: rgba(37, 99, 235, 0.16);
+  background-color: rgba(220, 38, 38, 0.16);
 }
 
 .hate-ml-mark.hate-detect-mode-hide {
-  background-color: #1d4ed8;
-  color: #eff6ff;
+  background-color: #991b1b;
+  color: #fef2f2;
 }
 
 .hate-ml-mark.hate-detect-mode-hide.revealed {
-  background-color: rgba(37, 99, 235, 0.22);
+  background-color: rgba(220, 38, 38, 0.22);
+  color: inherit;
 }
 
 .hate-ml {
-  outline: 2px solid rgba(37, 99, 235, 0.65);
+  outline: 2px solid rgba(220, 38, 38, 0.6);
   outline-offset: 2px;
   border-radius: 4px;
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(220, 38, 38, 0.08);
 }
 
 /* ================================================================
@@ -116,11 +128,18 @@
 }
 
 .hate-explain-token[data-shap-positive] {
-  background: rgba(239, 68, 68, 0.28);
-  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.28);
+  color: #991b1b;
 }
 
 .hate-explain-token[data-shap-negative] {
-  background: rgba(34, 197, 94, 0.2);
-  color: #15803d;
+  background: rgba(5, 150, 105, 0.2);
+  color: #065f46;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hate-detect-mark,
+  .hate-explain-token {
+    transition: none;
+  }
 }

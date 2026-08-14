@@ -12,9 +12,9 @@
       <header class="header">
         <div class="brand">
           <div class="brand-logo">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6l-8-4z" />
-              <path d="m9 12 2 2 4-4" />
+              <rect x="8.5" y="10.3" width="7" height="2.8" rx="1.4" fill="currentColor" stroke="none" />
             </svg>
           </div>
           <div class="brand-text">
@@ -24,6 +24,15 @@
         </div>
         <span id="version" class="badge-version">v1.0</span>
       </header>
+
+      <!-- Aviso de página no compatible -->
+      <div class="page-warning" id="pageWarning" role="status" aria-live="polite">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 8v5M12 16.5v.01" />
+        </svg>
+        <span id="pageWarningText"></span>
+      </div>
 
       <!-- Status row -->
       <section class="status-card" id="statusCard">
@@ -52,7 +61,7 @@
         </div>
         <div class="stat">
           <div class="stat-value" id="statTotal">0</div>
-          <div class="stat-label">total acumulado</div>
+          <div class="stat-label">en pestañas abiertas</div>
         </div>
         <div class="stat">
           <div class="stat-value" id="statPalabras">0</div>
@@ -62,27 +71,27 @@
 
       <!-- Mode selector -->
       <section class="card">
-        <div class="card-title">Modo de censura</div>
-        <div class="mode-grid" id="modeGrid">
-          <button class="mode" data-modo="highlight" type="button">
+        <div class="card-title" id="modeGridLabel">Modo de censura</div>
+        <div class="mode-grid" id="modeGrid" role="group" aria-labelledby="modeGridLabel">
+          <button class="mode" data-modo="highlight" type="button" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-3l11-11 3 3-11 11H3z"/><path d="m14 7 3 3"/></svg>
             </span>
             <span class="mode-label">Resaltar</span>
           </button>
-          <button class="mode" data-modo="blur" type="button">
+          <button class="mode" data-modo="blur" type="button" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18" stroke-dasharray="2 2"/></svg>
             </span>
             <span class="mode-label">Difuminar</span>
           </button>
-          <button class="mode" data-modo="asterisk" type="button">
+          <button class="mode" data-modo="asterisk" type="button" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16M6 6l12 12M18 6 6 18"/></svg>
             </span>
             <span class="mode-label">Asteriscos</span>
           </button>
-          <button class="mode" data-modo="hide" type="button">
+          <button class="mode" data-modo="hide" type="button" aria-pressed="false">
             <span class="mode-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s4-7 9-7 9 7 9 7-4 7-9 7-9-7-9-7z"/><path d="m4 4 16 16"/></svg>
             </span>
@@ -94,53 +103,76 @@
       <!-- Lexicon switches -->
       <section class="card">
         <div class="card-title">Lexicón de respaldo</div>
-        <label class="row toggle-row">
+        <div class="row toggle-row">
           <span>
             <strong>Diccionario local</strong>
-            <em>Se usa si la API no está activa o falla</em>
+            <em id="lexiconHint">Se usa si la API no está activa o falla</em>
           </span>
           <label class="switch small">
-            <input type="checkbox" id="toggleLexiconBase" checked />
+            <input
+              type="checkbox"
+              id="toggleLexiconBase"
+              aria-label="Activar o desactivar el diccionario local de respaldo"
+            />
             <span class="slider"></span>
           </label>
-        </label>
+        </div>
       </section>
 
       <!-- Backend status -->
       <section class="card api-card">
         <div class="card-title">Motor principal</div>
-        <label class="row toggle-row api-toggle">
+        <div class="row toggle-row api-toggle">
           <span>
             <strong>API BETO local</strong>
             <em>Prioridad para detección contextual</em>
           </span>
           <label class="switch small">
-            <input type="checkbox" id="toggleApiPrincipal" checked />
+            <input
+              type="checkbox"
+              id="toggleApiPrincipal"
+              aria-label="Activar o desactivar la API BETO local como motor principal"
+            />
             <span class="slider"></span>
           </label>
-        </label>
+        </div>
         <div class="api-row">
           <span id="apiDot" class="status-dot small"></span>
           <span id="apiText">Comprobando…</span>
           <button type="button" id="btnPingApi" class="btn-ghost btn-sm">Ping</button>
         </div>
+
+        <div class="umbral-row">
+          <div class="umbral-info">
+            <span class="umbral-label">Umbral de detección</span>
+            <span class="umbral-nivel" id="umbralNivel">Equilibrado</span>
+          </div>
+          <span class="umbral-valor" id="umbralValor">0.70</span>
+        </div>
+
         <p class="hint">
-          Si el modelo no responde, la extensión cae al lexicón local
-          (<code>http://127.0.0.1:8000</code>).
+          Si el modelo no responde, la extensión cae al lexicón local. El umbral
+          se ajusta en <strong>Configuración</strong>.
         </p>
       </section>
 
       <!-- Footer actions -->
       <footer class="actions">
         <button type="button" id="btnRescan" class="btn-primary">
-          <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+          <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
           <span class="btn-text">Re-escanear</span>
         </button>
         <button type="button" id="btnOpenOptions" class="btn-secondary">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
           Configuración
         </button>
       </footer>
+
+      <div class="actions">
+        <button type="button" id="btnResetStats" class="btn-ghost btn-sm">
+          Reiniciar contadores
+        </button>
+      </div>
 
       <p class="privacy">
         La API local recibe fragmentos visibles de la página. El lexicón personal

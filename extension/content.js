@@ -16,6 +16,7 @@ const MAX_ML_FRAGMENTOS_POR_ESCANEO = 80;
 const MIN_ML_CHARS = 15;
 const MAX_ML_CHARS = 512;
 const API_RETRY_MS = 30000;
+const MAX_REFS_ML = 400;
 
 const HATE_MARK_CLASS = "hate-detect-mark";
 const HATE_NODE_FLAG = "data-hate-scanned";
@@ -195,12 +196,31 @@ function activar() {
     return;
   }
 
+  conectarObserver();
+  scheduleScan(0);
+}
+
+function conectarObserver() {
+  if (!config.activo || !document.body) return;
   if (!observer) {
     observer = new MutationObserver(() => scheduleScan());
-    observer.observe(document.body, { childList: true, subtree: true });
   }
+  observer.observe(document.body, { childList: true, subtree: true });
+}
 
-  scheduleScan(0);
+/*
+ * Al insertar las marcas se modifica el DOM, lo que volveria a disparar el
+ * propio MutationObserver y generaria escaneos en cascada. Se pausa la
+ * observacion mientras se aplican los cambios y se reanuda despues.
+ */
+function conMutacionesPausadas(fn) {
+  const observaba = !!observer;
+  if (observaba) observer.disconnect();
+  try {
+    return fn();
+  } finally {
+    if (observaba) conectarObserver();
+  }
 }
 
 function desactivar() {
@@ -332,9 +352,11 @@ function escanearLexicon() {
     }
   }
 
-  for (const textNode of objetivos) {
-    nuevasDetecciones += procesarNodoTexto(textNode);
-  }
+  conMutacionesPausadas(() => {
+    for (const textNode of objetivos) {
+      nuevasDetecciones += procesarNodoTexto(textNode);
+    }
+  });
 
   if (nuevasDetecciones > 0) {
     config.detectados += nuevasDetecciones;
@@ -570,29 +592,63 @@ function aplicarResultadoML(resultado) {
   const textoOriginal =
     node && node.nodeValue !== null ? node.nodeValue : entry.original || entry.texto;
   const marca = crearMarcaML(textoOriginal, probabilidad, resultado.id, entry.texto);
+  const pTexto = Number.isFinite(probabilidad) ? probabilidad.toFixed(2) : "?";
 
-  let refParent = marca;
-  if (node && node.parentNode && document.contains(node)) {
-    node.parentNode.replaceChild(marca, node);
-    if (parent && parent.setAttribute) {
-      parent.setAttribute(ML_STATE_ATTR, "hit");
+  const refParent = conMutacionesPausadas(() => {
+    if (node && node.parentNode && document.contains(node)) {
+      node.parentNode.replaceChild(marca, node);
+      if (parent && parent.setAttribute) {
+        parent.setAttribute(ML_STATE_ATTR, "hit");
+      }
+      return marca;
     }
-  } else if (parent && document.contains(parent)) {
-    refParent = parent;
-    parent.classList.add("hate-ml");
-    parent.setAttribute(ML_STATE_ATTR, "hit");
-    parent.title = `BETO API: hate (p=${probabilidad.toFixed(2)})`;
-  }
+    if (parent && document.contains(parent)) {
+      parent.classList.add("hate-ml");
+      parent.setAttribute(ML_STATE_ATTR, "hit");
+      parent.title = `BETO API: hate (p=${pTexto})`;
+      return parent;
+    }
+    return marca;
+  });
 
   window.__hateRefs[resultado.id] = {
     parent: refParent,
     texto: entry.texto,
     original: textoOriginal,
   };
+  purgarRefsMl();
 
   config.detectados += 1;
   enviarStats();
   scheduleScan(120);
+}
+
+/*
+ * Las referencias de detecciones confirmadas se conservan para poder pedir
+ * la explicacion XAI al hacer clic. En paginas de scroll infinito eso
+ * retendria nodos indefinidamente, asi que se descartan las mas antiguas
+ * y las que ya no estan en el documento.
+ */
+function purgarRefsMl() {
+  const ids = Object.keys(window.__hateRefs);
+  if (ids.length <= MAX_REFS_ML) return;
+
+  for (const id of ids) {
+    const ref = window.__hateRefs[id];
+    if (!ref || !ref.parent || !document.contains(ref.parent)) {
+      delete window.__hateRefs[id];
+    }
+  }
+
+  // Las pendientes esperan respuesta de la API; descartarlas dejaria su nodo
+  // marcado como "pending" para siempre. Solo se evictan las ya resueltas.
+  const evictables = Object.keys(window.__hateRefs).filter(
+    (id) => !window.__hateRefs[id].node
+  );
+  const sobrantes = Object.keys(window.__hateRefs).length - MAX_REFS_ML;
+  for (let i = 0; i < sobrantes && i < evictables.length; i += 1) {
+    delete window.__hateRefs[evictables[i]];
+  }
 }
 
 function marcarMlComoRevisado(entry, state) {
@@ -732,7 +788,7 @@ function aplicarExplicacion(resultado) {
   }
 
   if (fragment.childNodes.length > 0) {
-    el.replaceChildren(fragment);
+    conMutacionesPausadas(() => el.replaceChildren(fragment));
   }
 }
 
@@ -761,18 +817,20 @@ function reiniciarEscaneoCompleto() {
 }
 
 function limpiarMarcas() {
-  document.querySelectorAll(`.${HATE_MARK_CLASS}`).forEach((mark) => {
-    const original = mark.dataset.hateOriginal || mark.textContent || "";
-    mark.replaceWith(document.createTextNode(original));
-  });
+  conMutacionesPausadas(() => {
+    document.querySelectorAll(`.${HATE_MARK_CLASS}`).forEach((mark) => {
+      const original = mark.dataset.hateOriginal || mark.textContent || "";
+      mark.replaceWith(document.createTextNode(original));
+    });
 
-  document.querySelectorAll(`[${HATE_NODE_FLAG}]`).forEach((el) => {
-    el.removeAttribute(HATE_NODE_FLAG);
-  });
+    document.querySelectorAll(`[${HATE_NODE_FLAG}]`).forEach((el) => {
+      el.removeAttribute(HATE_NODE_FLAG);
+    });
 
-  if (document.body && typeof document.body.normalize === "function") {
-    document.body.normalize();
-  }
+    if (document.body && typeof document.body.normalize === "function") {
+      document.body.normalize();
+    }
+  });
 }
 
 function limpiarEstadoMl() {

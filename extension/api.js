@@ -10,6 +10,7 @@
   const DEFAULT_BASE_URL = "http://127.0.0.1:8000";
   const DEFAULT_TIMEOUT_MS = 4000;
   const CACHE_TTL_MS = 5 * 60 * 1000;
+  const CACHE_MAX_ENTRIES = 500;
   const COLA_MAX = 3;
 
   const cache = new Map();
@@ -33,8 +34,27 @@
     return entry.v;
   }
 
+  /*
+   * El TTL solo se comprueba al leer una clave, así que sin un tope las
+   * entradas nunca consultadas de nuevo se acumularían en sesiones largas.
+   * Al llegar al máximo se purgan las caducadas y, si aún sobra, se
+   * descartan las más antiguas (Map conserva el orden de inserción).
+   */
   function cacheSet(key, value) {
+    if (cache.size >= CACHE_MAX_ENTRIES) purgarCache();
     cache.set(key, { t: Date.now(), v: value });
+  }
+
+  function purgarCache() {
+    const ahora = Date.now();
+    for (const [k, entry] of cache) {
+      if (ahora - entry.t > CACHE_TTL_MS) cache.delete(k);
+    }
+    while (cache.size >= CACHE_MAX_ENTRIES) {
+      const oldest = cache.keys().next();
+      if (oldest.done) break;
+      cache.delete(oldest.value);
+    }
   }
 
   async function fetchConTimeout(url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {

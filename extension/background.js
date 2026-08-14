@@ -27,6 +27,27 @@ const DEFAULTS = {
 const API_HEALTH_TTL_MS = 10000;
 const API_BACKOFF_MS = 30000;
 
+/* Colores de badge alineados con la identidad violeta de la extensión. */
+const BADGE_ACTIVO = "#6d4ae6";
+const BADGE_INACTIVO = "#6b7280";
+const BADGE_ERROR = "#dc2626";
+
+/*
+ * El manifest solo declara host_permissions para el backend local. Cualquier
+ * otro host se bloquearía a nivel de navegador, así que se detecta antes de
+ * intentar el fetch para poder dar un motivo entendible en la UI.
+ */
+const HOSTS_PERMITIDOS = ["127.0.0.1", "localhost"];
+
+function esHostPermitido(url) {
+  try {
+    const { hostname, protocol } = new URL(url);
+    return protocol === "http:" && HOSTS_PERMITIDOS.includes(hostname);
+  } catch (_e) {
+    return false;
+  }
+}
+
 const detectadosPorTab = {};
 let apiHealthState = {
   baseUrl: "",
@@ -64,7 +85,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return true;
 
     case "RESET_STATS":
-      Object.keys(detectadosPorTab).forEach((k) => delete detectadosPorTab[k]);
+      Object.keys(detectadosPorTab).forEach((k) => {
+        limpiarBadgeTab(Number(k));
+        delete detectadosPorTab[k];
+      });
       chrome.storage.local.set({
         estadisticas: { totalDetectados: 0, ultimaActualizacion: Date.now() },
       });
@@ -232,6 +256,22 @@ async function pingApi(url) {
   const baseUrl = self.HateApi.normalizeBaseUrl
     ? self.HateApi.normalizeBaseUrl(url)
     : url || DEFAULTS.apiUrl;
+
+  if (!esHostPermitido(baseUrl)) {
+    apiHealthState = {
+      baseUrl,
+      ok: false,
+      checkedAt: Date.now(),
+      backoffUntil: Date.now() + API_BACKOFF_MS,
+      data: null,
+    };
+    return {
+      ok: false,
+      reason: "host_not_allowed",
+      error: `La extensión solo puede conectarse a ${HOSTS_PERMITIDOS.join(" o ")}`,
+    };
+  }
+
   const data = await self.HateApi.apiHealth(baseUrl, 1500);
   const statusOk = data && data.status === "ok";
   const modelReady = data && data.model_loaded !== false;
@@ -295,10 +335,10 @@ function extraerIds(fragmentos) {
 function mostrarBadgeError(tabId) {
   try {
     chrome.action.setBadgeText({ text: "!", tabId });
-    chrome.action.setBadgeBackgroundColor({ color: "#dc2626", tabId });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_ERROR, tabId });
   } catch (_e) {
     chrome.action.setBadgeText({ text: "!" });
-    chrome.action.setBadgeBackgroundColor({ color: "#dc2626" });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_ERROR });
   }
 }
 
@@ -339,10 +379,19 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 async function refrescarBadgeGlobal() {
   const { deteccionActiva } = await chrome.storage.local.get(["deteccionActiva"]);
   if (deteccionActiva) {
-    chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_ACTIVO });
   } else {
     chrome.action.setBadgeText({ text: "" });
-    chrome.action.setBadgeBackgroundColor({ color: "#6b7280" });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_INACTIVO });
+  }
+}
+
+function limpiarBadgeTab(tabId) {
+  if (!Number.isInteger(tabId)) return;
+  try {
+    chrome.action.setBadgeText({ text: "", tabId });
+  } catch (_e) {
+    /* La pestaña puede haberse cerrado. */
   }
 }
 
@@ -350,9 +399,9 @@ function actualizarBadgeTab(tabId, n) {
   const text = n > 0 ? (n > 99 ? "99+" : String(n)) : "";
   try {
     chrome.action.setBadgeText({ text, tabId });
-    chrome.action.setBadgeBackgroundColor({ color: "#2563eb", tabId });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_ACTIVO, tabId });
   } catch (_e) {
     chrome.action.setBadgeText({ text });
-    chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+    chrome.action.setBadgeBackgroundColor({ color: BADGE_ACTIVO });
   }
 }

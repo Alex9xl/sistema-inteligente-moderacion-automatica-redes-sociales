@@ -2,20 +2,29 @@
  * Popup logic - sincroniza UI, storage y pestana activa.
  */
 
+const UMBRAL_DEFAULT = 0.7;
+const API_URL_DEFAULT = "http://127.0.0.1:8000";
+
 const els = {
   toggleDeteccion: document.getElementById("toggleDeteccion"),
   statusCard: document.getElementById("statusCard"),
   statusDot: document.getElementById("statusDot"),
   statusTitle: document.getElementById("statusTitle"),
   statusSub: document.getElementById("statusSub"),
+  pageWarning: document.getElementById("pageWarning"),
+  pageWarningText: document.getElementById("pageWarningText"),
   modeGrid: document.getElementById("modeGrid"),
   toggleLexiconBase: document.getElementById("toggleLexiconBase"),
+  lexiconHint: document.getElementById("lexiconHint"),
   toggleApiPrincipal: document.getElementById("toggleApiPrincipal"),
   apiDot: document.getElementById("apiDot"),
   apiText: document.getElementById("apiText"),
   btnPingApi: document.getElementById("btnPingApi"),
   btnRescan: document.getElementById("btnRescan"),
   btnOpenOptions: document.getElementById("btnOpenOptions"),
+  btnResetStats: document.getElementById("btnResetStats"),
+  umbralValor: document.getElementById("umbralValor"),
+  umbralNivel: document.getElementById("umbralNivel"),
   statPagina: document.getElementById("statPagina"),
   statTotal: document.getElementById("statTotal"),
   statPalabras: document.getElementById("statPalabras"),
@@ -45,6 +54,7 @@ async function init() {
     "palabrasUsuario",
     "apiHabilitada",
     "apiUrl",
+    "umbralMl",
     "estadisticas",
   ]);
 
@@ -55,12 +65,15 @@ async function init() {
     lexiconHabilitado: stored.lexiconHabilitado !== false,
     palabrasUsuario: stored.palabrasUsuario || [],
     apiHabilitada: stored.apiHabilitada !== false,
-    apiUrl: stored.apiUrl || "http://127.0.0.1:8000",
+    apiUrl: stored.apiUrl || API_URL_DEFAULT,
+    umbralMl:
+      typeof stored.umbralMl === "number" ? stored.umbralMl : UMBRAL_DEFAULT,
     estadisticas: stored.estadisticas || { totalDetectados: 0 },
   };
 
   pintarEstado(cfg);
   bindEventos();
+  await revisarPaginaActual();
   await pingApi(cfg.apiUrl, cfg.apiHabilitada);
   refrescarStatsPagina();
   await verificarMotorActivo();
@@ -98,7 +111,7 @@ async function verificarMotorActivo() {
     lexiconHabilitado: true,
     lexiconActivo: true,
   });
-  els.toggleLexiconBase.checked = true;
+  pintarLexicon({ lexiconActivo: true, lexiconHabilitado: true });
   toast(
     "Se reactivó el lexicón local: no puedes desactivar la API BETO y el lexicón al mismo tiempo.",
     "warning"
@@ -107,12 +120,47 @@ async function verificarMotorActivo() {
 
 function pintarEstado(cfg) {
   els.toggleDeteccion.checked = cfg.deteccionActiva;
-  els.toggleLexiconBase.checked = cfg.lexiconActivo;
   els.toggleApiPrincipal.checked = cfg.apiHabilitada;
+  pintarLexicon(cfg);
   setEstado(cfg);
   setModo(cfg.modoCensura);
+  pintarUmbral(cfg.umbralMl);
   els.statTotal.textContent = formatNumber(cfg.estadisticas.totalDetectados || 0);
   els.statPalabras.textContent = (cfg.palabrasUsuario || []).length;
+}
+
+/*
+ * El diccionario local depende de dos ajustes: el toggle maestro del
+ * lexicón (solo editable en Configuración) y el diccionario base. Si el
+ * maestro está apagado, aquí se refleja como apagado y no editable, para
+ * no mostrar un estado que no corresponde con el comportamiento real.
+ */
+function pintarLexicon(cfg) {
+  const habilitado = cfg.lexiconHabilitado !== false;
+  const activo = cfg.lexiconActivo !== false;
+
+  els.toggleLexiconBase.checked = habilitado && activo;
+  els.toggleLexiconBase.disabled = !habilitado;
+
+  if (els.lexiconHint) {
+    els.lexiconHint.textContent = habilitado
+      ? "Se usa si la API no está activa o falla"
+      : "Desactivado por completo desde Configuración";
+  }
+}
+
+function pintarUmbral(valor) {
+  const v = typeof valor === "number" && Number.isFinite(valor) ? valor : UMBRAL_DEFAULT;
+  if (els.umbralValor) els.umbralValor.textContent = v.toFixed(2);
+  if (!els.umbralNivel) return;
+
+  let nivel;
+  if (v < 0.5) nivel = "Muy sensible";
+  else if (v <= 0.65) nivel = "Equilibrado";
+  else nivel = "Estricto";
+
+  els.umbralNivel.textContent =
+    Math.abs(v - UMBRAL_DEFAULT) < 0.001 ? `${nivel} · recomendado` : nivel;
 }
 
 function setEstado(cfg) {
@@ -132,7 +180,9 @@ function setEstado(cfg) {
 
 function setModo(modo) {
   document.querySelectorAll(".mode").forEach((b) => {
-    b.classList.toggle("active", b.dataset.modo === modo);
+    const activo = b.dataset.modo === modo;
+    b.classList.toggle("active", activo);
+    b.setAttribute("aria-pressed", String(activo));
   });
 }
 
@@ -150,7 +200,7 @@ function bindEventos() {
     await chrome.storage.local.set({ apiHabilitada });
     const stored = await chrome.storage.local.get(["deteccionActiva", "apiUrl"]);
     setEstado({ deteccionActiva: !!stored.deteccionActiva, apiHabilitada });
-    await pingApi(stored.apiUrl || "http://127.0.0.1:8000", apiHabilitada);
+    await pingApi(stored.apiUrl || API_URL_DEFAULT, apiHabilitada);
     await verificarMotorActivo();
     pedirEscaneo();
   });
@@ -183,15 +233,24 @@ function bindEventos() {
 
   els.btnPingApi.addEventListener("click", async () => {
     const s = await chrome.storage.local.get(["apiUrl", "apiHabilitada"]);
-    pingApi(s.apiUrl || "http://127.0.0.1:8000", s.apiHabilitada !== false);
+    pingApi(s.apiUrl || API_URL_DEFAULT, s.apiHabilitada !== false);
   });
+
+  if (els.btnResetStats) {
+    els.btnResetStats.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ tipo: "RESET_STATS" }, () => {
+        void chrome.runtime.lastError;
+        els.statTotal.textContent = "0";
+        els.statPagina.textContent = "0";
+        toast("Contadores reiniciados", "success");
+      });
+    });
+  }
 
   chrome.storage.onChanged.addListener((changes) => {
     if (changes.estadisticas) {
       const v = changes.estadisticas.newValue || {};
       els.statTotal.textContent = formatNumber(v.totalDetectados || 0);
-      // BUG4: actualizar también el contador de la página activa cuando
-      // el background reporta nuevas detecciones (STATS_UPDATE del content script).
       refrescarStatsPagina();
     }
     if (changes.palabrasUsuario) {
@@ -200,8 +259,14 @@ function bindEventos() {
     if (changes.apiHabilitada) {
       els.toggleApiPrincipal.checked = changes.apiHabilitada.newValue !== false;
     }
-    if (changes.lexiconActivo) {
-      els.toggleLexiconBase.checked = changes.lexiconActivo.newValue !== false;
+    if (changes.lexiconActivo || changes.lexiconHabilitado) {
+      chrome.storage.local.get(
+        ["lexiconActivo", "lexiconHabilitado"],
+        (s) => pintarLexicon(s)
+      );
+    }
+    if (changes.umbralMl) {
+      pintarUmbral(Number(changes.umbralMl.newValue));
     }
   });
 }
@@ -242,6 +307,40 @@ async function pedirEscaneoConFeedback() {
 function esUrlInyectable(url) {
   if (!url) return false;
   return /^(https?:|file:)/i.test(url);
+}
+
+/*
+ * En páginas internas del navegador (chrome://, la tienda de extensiones,
+ * PDFs) el content script no puede inyectarse. Sin este aviso el popup
+ * mostraba "0" sin explicar por qué la extensión parece no hacer nada.
+ */
+async function revisarPaginaActual() {
+  if (!els.pageWarning) return;
+
+  let url = "";
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    url = (tab && tab.url) || "";
+  } catch (_e) {
+    url = "";
+  }
+
+  if (esUrlInyectable(url)) {
+    els.pageWarning.classList.remove("show");
+    return;
+  }
+
+  let motivo = "La extensión no puede analizar esta página.";
+  if (/^(chrome|edge|about|brave|opera):/i.test(url)) {
+    motivo = "Las páginas internas del navegador no se pueden analizar.";
+  } else if (/chromewebstore\.google\.com|chrome\.google\.com\/webstore/i.test(url)) {
+    motivo = "La tienda de extensiones no permite el análisis.";
+  } else if (!url) {
+    motivo = "No hay una pestaña web activa para analizar.";
+  }
+
+  els.pageWarningText.textContent = motivo;
+  els.pageWarning.classList.add("show");
 }
 
 async function refrescarStatsPagina() {
@@ -288,6 +387,9 @@ function pingApi(url, apiHabilitada = true) {
       } else if (res.reason === "model_not_loaded") {
         els.apiDot.classList.add("is-error");
         els.apiText.textContent = "API sin modelo cargado";
+      } else if (res.reason === "host_not_allowed") {
+        els.apiDot.classList.add("is-error");
+        els.apiText.textContent = "URL no permitida; revisa Configuración";
       } else {
         els.apiDot.classList.add("is-error");
         els.apiText.textContent = "API sin conexión; respaldo local";

@@ -13,9 +13,19 @@ tiene el modelo cargado o no responde.
 - Respaldo por lexicon local y lexicon personal del usuario.
 - 4 modos de censura: Resaltar, Difuminar, Asteriscos y Ocultar.
 - Umbral configurable para la probabilidad BETO.
-- Estadisticas por pagina y total acumulado.
+- Estadisticas por pagina y por pestanas abiertas, reiniciables desde el popup.
+- Interfaz accesible por teclado, con modo claro y oscuro automatico.
 - Privacidad: el lexicon personal vive en `chrome.storage.local`; la API local
   recibe solo fragmentos visibles cuando esta habilitada.
+
+## Codigo de color de las marcas
+
+| Color | Origen | Significado |
+|---|---|---|
+| Rojo | API BETO | Deteccion contextual del modelo (alta confianza). |
+| Ambar | Lexicon local | Coincidencia literal de un termino (heuristica). |
+
+El violeta se reserva para la interfaz de la extension.
 
 ## Flujo
 

@@ -6,7 +6,9 @@ Uso (desde la carpeta extension/):
 
 Requiere: Pillow  (pip install pillow)
 
-Estética: gradiente violeta + escudo con check, alineado al popup.
+Estética: gradiente violeta + escudo con una franja censurada, alineado al
+popup. La franja (en vez de un check) comunica que la extensión oculta
+contenido, no que lo aprueba.
 """
 
 from pathlib import Path
@@ -20,7 +22,7 @@ SIZES = [16, 32, 48, 128]
 def gradient(size: int) -> Image.Image:
     """Crea un fondo cuadrado con gradiente diagonal violeta."""
     img = Image.new("RGB", (size, size), 0)
-    top = (124, 58, 237)        # #7c3aed
+    top = (109, 74, 230)        # #6d4ae6
     bottom = (167, 139, 250)    # #a78bfa
     for y in range(size):
         t = y / max(size - 1, 1)
@@ -43,40 +45,58 @@ def round_corners(img: Image.Image, radius: int) -> Image.Image:
     return out
 
 
+def shield_polygon(big: float, left: float, apex: float, shoulder: float,
+                   side: float, bottom: float) -> list[tuple[float, float]]:
+    """Puntos del escudo en coordenadas absolutas, a partir de fracciones."""
+    right = 1.0 - left
+    return [
+        (big * 0.5, big * apex),
+        (big * right, big * shoulder),
+        (big * right, big * side),
+        (big * 0.5, big * bottom),
+        (big * left, big * side),
+        (big * left, big * shoulder),
+    ]
+
+
 def draw_shield(size: int) -> Image.Image:
-    """Dibuja el escudo + check en blanco encima del gradiente."""
-    base = gradient(size).convert("RGBA")
-    base = round_corners(base, radius=int(size * 0.22))
+    """Dibuja el escudo con la franja censurada encima del gradiente.
 
-    d = ImageDraw.Draw(base)
+    Se dibuja a una resolución mayor (supersampling) y se reduce al final,
+    porque ImageDraw no aplica antialiasing y a 16 px los trazos quedarían
+    dentados. El contorno se consigue restando un escudo interior en vez de
+    trazar líneas, para que las uniones (sobre todo el vértice superior)
+    queden limpias.
+    """
+    scale = 8
+    big = size * scale
 
-    # Escudo simplificado
-    margin = size * 0.22
-    top = size * 0.18
-    bot = size * 0.82
-    cx = size / 2
-    half = (size - margin * 2) / 2
+    base = gradient(big).convert("RGBA")
+    base = round_corners(base, radius=int(big * 0.22))
 
-    shield = [
-        (cx, top),
-        (cx + half, top + size * 0.08),
-        (cx + half, size * 0.55),
-        (cx, bot),
-        (cx - half, size * 0.55),
-        (cx - half, top + size * 0.08),
-    ]
-    line_w = max(1, int(size * 0.07))
-    d.line(shield + [shield[0]], fill=(255, 255, 255, 235), width=line_w, joint="curve")
+    glyph = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    d = ImageDraw.Draw(glyph)
 
-    # Check
-    pts = [
-        (cx - size * 0.13, cx - size * 0.02),
-        (cx - size * 0.03, cx + size * 0.10),
-        (cx + size * 0.18, cx - size * 0.16),
-    ]
-    d.line(pts, fill=(255, 255, 255, 245), width=line_w, joint="curve")
+    d.polygon(
+        shield_polygon(big, left=0.22, apex=0.15, shoulder=0.245, side=0.55, bottom=0.87),
+        fill=(255, 255, 255, 255),
+    )
+    d.polygon(
+        shield_polygon(big, left=0.305, apex=0.275, shoulder=0.315, side=0.535, bottom=0.735),
+        fill=(0, 0, 0, 0),
+    )
 
-    return base
+    # Franja censurada: comunica que el contenido se oculta.
+    bar_h = big * 0.135
+    bar_y = big * 0.475 - bar_h / 2
+    d.rounded_rectangle(
+        (big * 0.35, bar_y, big * 0.65, bar_y + bar_h),
+        radius=bar_h / 2,
+        fill=(255, 255, 255, 255),
+    )
+
+    base.alpha_composite(glyph)
+    return base.resize((size, size), Image.LANCZOS)
 
 
 def main() -> None:
