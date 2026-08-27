@@ -27,7 +27,7 @@ tu equipo y descarga los artefactos al clonar el proyecto:
 
 ```powershell
 git lfs install
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/Alex9xl/sistema-inteligente-moderacion-automatica-redes-sociales.git
 cd sistema-inteligente-moderacion-automatica-redes-sociales
 git lfs pull
 ```
