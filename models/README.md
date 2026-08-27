@@ -23,14 +23,10 @@ models/
 
 ## Nota importante
 
-**Los archivos .bin, .pt y .safetensors no se versionan en git.**
-
-Se publican aparte en:
-- Hugging Face Hub (recomendado)
-- Google Drive con enlace documentado
-- Release de GitHub
-
-Descargar modelos desde estas fuentes y extraer en este directorio antes de ejecutar la API.
+Los checkpoints intermedios no se versionan. En cambio,
+`beto_finetuned_final/` se versiona íntegramente: su archivo
+`model.safetensors` se almacena con Git LFS. Tras clonar el repositorio, ejecuta
+`git lfs pull` para descargarlo antes de iniciar la API.
 
 ## Verificación
 

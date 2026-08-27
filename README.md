@@ -19,14 +19,38 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-En CMD:
+### 2. Obtener el modelo final con Git LFS
+
+El modelo final usado por la API se versiona en el repositorio mediante Git LFS,
+porque `model.safetensors` es un archivo grande. Instala Git LFS una sola vez en
+tu equipo y descarga los artefactos al clonar el proyecto:
+
+```powershell
+git lfs install
+git clone <URL_DEL_REPOSITORIO>
+cd sistema-inteligente-moderacion-automatica-redes-sociales
+git lfs pull
+```
+
+Si el repositorio ya estaba clonado antes de habilitar LFS, ejecuta solamente:
+
+```powershell
+git lfs pull
+```
+
+Antes de iniciar la API, la carpeta `models/beto_finetuned_final/` debe contener,
+como mínimo, `config.json`, `model.safetensors`, `tokenizer.json`,
+`tokenizer_config.json`, `special_tokens_map.json` y `vocab.txt`. No desactives
+la descarga de LFS si quieres ejecutar la API localmente.
+
+En CMD, para activar el entorno:
 
 ```cmd
 venv\Scripts\activate.bat
 pip install -r requirements.txt
 ```
 
-### 2. Preparar datos
+### 3. Preparar datos
 
 ```powershell
 make data
@@ -34,13 +58,13 @@ make data
 
 Si `make` no esta disponible, ejecutar los pasos detallados en `documentos_extras/GUIA_REPRODUCCION.md`.
 
-### 3. Ejecutar pruebas
+### 4. Ejecutar pruebas
 
 ```powershell
 make test
 ```
 
-### 4. Levantar la API
+### 5. Levantar la API
 
 ```powershell
 .\venv\Scripts\python.exe -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 --reload
@@ -53,7 +77,11 @@ La API queda disponible en:
 
 > Nota: usar este comando directo para levantar la API en Windows. El objetivo `make api` puede no funcionar segun la configuracion local de `make`, `PATH` o entorno virtual.
 
-### 5. Entrenamiento y evaluacion en Colab
+Si el arranque muestra un error sobre `config.json`, `model_type` o un modelo no
+reconocido, verifica que Git LFS haya descargado el contenido real del modelo con
+`git lfs pull` y que no solo exista `model_card.md`.
+
+### 6. Entrenamiento y evaluacion en Colab
 
 El entrenamiento, la evaluacion, H3 y XAI se reproducen con:
 
@@ -63,7 +91,7 @@ notebooks/colab_entrenamiento_evaluacion_xai.ipynb
 
 Es importante ejecutar tambien las 3 celdas extra destinadas a la Hipotesis 1. Esas celdas generan la comparacion entre BETO ajustado y BETO base sin fine-tuning, necesaria para sustentar H1 en la tesis.
 
-### 6. Instalar la extension
+### 7. Instalar la extension
 
 1. Abrir Chrome o Edge.
 2. Entrar a `chrome://extensions/` o `edge://extensions/`.

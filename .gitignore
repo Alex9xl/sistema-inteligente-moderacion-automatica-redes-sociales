@@ -44,8 +44,7 @@ models/*/
 !models/.gitkeep
 !models/README.md
 !models/beto_finetuned_final/
-models/beto_finetuned_final/*
-!models/beto_finetuned_final/model_card.md
+!models/beto_finetuned_final/**
 
 reports/logs/
 
@@ -62,3 +61,7 @@ reports/logs/
 Thumbs.db
 
 documentos_extras2/
+
+# El modelo final es parte del artefacto reproducible del proyecto.
+# Su archivo model.safetensors se gestiona mediante Git LFS (.gitattributes).
+!models/beto_finetuned_final/**
